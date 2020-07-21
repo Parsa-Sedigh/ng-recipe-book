@@ -239,8 +239,46 @@ We nest the recipe-item folder inside recipe-list because a recipe item is just 
  When you add @ViewChild() on a property, the type of that property would be ElementRef and the properties that have ElementRef
  type, have a useful special property called nativeElement property. With this property we can get access to underlying element.
 
- So now without 2-way binding and by using local references passed to .ts methods or by getting local references
+ So now without 2-way binding and by using local references passed to .ts methods or by getting local references in @ViewChild() ,
+ our app works again.
+ It's better not to change the element through using @ViewChild() and it's property. So you shouldn't access DOM through this
+ approach. Because angular offers you a better way of accessing DOM with directives. So generally you should use string interpolation
+ pr property binding if you want to output something in DOM and you shouldn't mess with any element itself if you even CAN do it through
+ angular.
  -->
+<!-- Another way of passing data around:
+ Everything you place between opening and closing tag of your own component is lost by default (is simply removed from the DOM.) and
+ angular won't even care about it.
+ For example:
+ <app-server>
+    <div>...</div>
+    <div>...</div>
+    <div>...</div>
+ </app-server>
+
+  So all of the 3 divs and their content won't be in DOM.
+  But you can change this behavior. We can use a special directive (it's directive even though it's looks like a component, but
+  it doesn't have it's own template) and you can add this directive where the codes that you placed in between of opening and
+  closing tag of component, would be actually.
+  So imagine you want to put that p element where you USE the component itself.
+  First cut and paste that p element in between <app-server> tags. But right now it doesn't displayed on the page. Because
+  by default we can't put anything in between where we use our component.
+  For fixing that, we place <ng-content> opening and closing tags where the <p> elements where.
+  <ng-content> serves as a hook where you can place in your component template
+
+  server-component.html :
+  ...
+  <p>
+  </p>
+  ...
+
+  app.component.html :
+  ...
+  <app-server>
+
+  </app-server>
+  ...
+  -->
 
 <app-header></app-header>
 <div class="container">
