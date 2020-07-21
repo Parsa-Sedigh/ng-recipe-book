@@ -1,0 +1,49 @@
+<!-- In <form> html element, remove the action attr, because we're not going to request to the server once this form is submitted.
+
+ We use type="submit" on a <button> element because that button would submit the form. But type="button" won't submit the
+  form.
+
+  Before using .push() on an array, that array must first be initialized. So we don't get error of trying to use push on
+  undefined.
+
+  Source maps are a little addition which cli kind of adds to the bundled files which allow the browser to translate the
+  translated js code back to ts code or to simply map the js code to our ts code.
+  In development only, those sourcemaps will be stripped out for production.
+
+  Use browser debugger with sourcemaps:
+  You can see your main.bundle.js file and click on a line you want on it, then it would open the typescript file which the
+  that bundled line was from that .ts file. In sources files. For accessing ts codes under webpack, you can DIRECTLY access
+  .ts code. In sources, under webpack, you should find a couple of subfolders, the .ts coeds are there!
+
+   You can also use augury and after installation you can use it in browser developers tools.-->
+
+<div class="row">
+  <div class="col-xs-12">
+    <form action="">
+      <div class="row">
+        <div class="col-sm-5 form-group">
+          <label for="name">Name</label>
+            <input type="text" id="name" class="form-control">
+        </div>
+
+        <div class="col-sm-2 form-group">
+          <label for="amount">Amount</label>
+            <input type="number" id="amount" class="form-control">
+        </div>
+
+        <div class="row">
+          <div class="col-xs-12">
+              <button class="btn btn-success" type="submit">Add</button>
+              <button class="btn btn-danger" type="button">Deleter</button>
+              <button class="btn btn-primary" type="button">Clear</button>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+
+
+
