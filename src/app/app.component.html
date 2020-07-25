@@ -1091,7 +1091,7 @@ Learn: So for injecting service1 into service2 , you must add an arg for service
   in app.module.ts and that's because by providing that / in FIRST ELEMENT of routerLink, we make that path an absolute path.
   But the next elements of route shouldn't have /. So for example if we want to specify the users/profile path,
   it would be:
-  routerLink = "[/users, profile]"
+  routerLink = "['/users', 'profile']"
 
   So we used array notation for value of routerLink's value, because by using [routerLink] = "['...', '...', ...]" notation instead of
   routerLink = "''" notation, it allows you to construct complex paths very easily.
@@ -1128,9 +1128,94 @@ Learn: So for injecting service1 into service2 , you must add an arg for service
 
   In angular you can even navigate around like when you're in folder directories. So like using ../ . So '../servers' means
   first go one level up in directories and then append(WHY append? Because here we're using relative path) 'servers' to the path.
-  But for example if you were on: '.../servers/something' route,
-  -->
+  But for example if you were on: '.../servers/something' route and you go to '../', the path would be .../ . So it didn't go just
+  one level up but it went 2 levels up and removed both segments.
+  Learn: So '../' does not neccisirly only remove one segment in path, but instead it would REMOVES THE CURRENTLY LOADED SEGMENT.
 
+  So absolute paths always append to the ROOT DOMAIN and relative paths add the segments to the currently loaded path.
+  -->
+<!-- Dynamically add a kinda active class to the path which we're currently on it:
+So it would be good if we could dynamically add that class to the active path. Angular gives us a specific directive for this
+task and it;s routerLinkActive = "" directive. We can add this directive to the wrapping element or to the element itself
+(the element itself is the element which has routerLink on it.) . For example:
+<li>
+<a routerLink="..."></a>
+</li>
+
+So in the example above, you can add routerLinkActive to the wrapping element of the element which has routerLink which in this
+case is <li> or you can add that directive to the element itself which is <a> and that directive will atach the class that you
+specify in between of "" to the element which this directive sits on.
+When using bootstrap and you want to add active class to show the current path you're in it, you shouldn't add it to <a> but
+instead you must add that directive with it's value to <li> .But this depends on the css or css library you're using.
+
+Now if you use this directive on this snippet in below, the home <li> always has the active class and it doesn't matter we currently
+are in which path. But if you are in .../users , the servers <li> hasn't active class and vice versa, but home <li> always has
+active class. WHY?
+Learn: Well, routerLinkActive directive does one thing. It analyzes your currently loaded path and then checks which links
+ LEAD to a route which uses this current path.
+ So if we are on .../users , well we have .../ in this path. So the empty path segment is part of all paths. But we don't want
+ to home page being mark, even when we're in ../users path. For fix that we can add some configuration to routerLinkActive directive.
+ The solution is, on the same element which routerLinkActive directive was placed on, we can add routerLinkActiveOptions and this
+ needs a property binding, because we don't just pass a string to this, instead we pass a JS object inside "" for the value of
+ routerLinkActiveOptions and that wouldn't work without enclosing routerLinkActiveOptions with [] .
+ So if you want to pass an object to a directive, you must bind that directive by enclosing it in []. Like what we did here.
+ So with by enclosing directive in [], we can pass anything that resolves dynamically to that directive.
+ Now in the object that you are passing to routerLinkActiveOptions create a property named exact and set it to true.
+ So that prop, basically tells angular only add that routerLinkActive class which is on a same element with this
+ routerLinkActiveOptions, if the EXACT or the FULL path is whatever that routerLink leads to that path. So the paths which
+ are PART of the path we are going to, won't get that routerLinkActive class.
+
+ But if you're on .../ , .../users or anything else are not kind of inside the .../ path.
+-->
+<!-- Navigating programmatically:
+What now if we want to load a route programmatically?
+In other words, we don't have a link which user can click but instead we have finished some operations or user clicked some button
+and then we want to trigger the navigation from our typescript code(programmatically).
+For example you have a <button> element which has a click event on it which would executed a method from the .ts file of that
+component.Also IN THE END we want to navigate to another component or service. So of course we could use routerLink on that button and
+don't create that method, if we want to JUST go to that file. But because we want to do some complex stuff and ... , FIRST we want
+to execute some code and THEN go or navigate to that file. So in this case we can't use routerLink directive. Because it would
+gets us to that file without we could execute our codes before going to that file and this is not what we want.
+But still you can use routerLink in this case but you must also add (click) = "method()" event to the element which you added
+routerLink to it. So with that first that method would called and then routerLink would direct us to that route. So this was another
+approach. But for the first approach which in that, we don't use routerLink on that element, we can simply bind a method to
+click event.
+So first in that .ts file which that method exists we must inject or import the angular router. Because we want to navigate to
+other places so we somehow need the angular router. Because we need to tell it, "hey please navigate us somewhere else!"
+So we can import this router in .ts file.
+For doing that, first we need to bind it to a private property and you can choose any name you want for that binded prop.
+Also we can use the shortcut for creating and initiallizing the binded property. Now we can call the navigate() method on
+that binded prop which is binded to angular router.
+navigate() method takes an argument which allows us to navigate us to a new route and in () of navigate() , we must define an
+array of single elements of that new path which we would navigated to that path. In this array, the first element of the array
+is simply the first segment of your path. So if you want to go to '.../servers' , we must add '/servers' as the first element
+of that array and this is an absolute path. Also you could define some relative path in there too.
+But with that approach you must also control to what, this relative path should be relative?
+
+So that .ts file should be:
+
+import {Component, OnInit} from '@angular/core';
+import {Router} from '@angular/router';
+
+@Component({...})
+export class HomeComponent {
+    constructor(private router: Router) {}
+    ngOnInit() {}
+    onLoadServers () {
+       //Some complex calculations...
+       this.router.navigate(['/servers']);
+    }
+}
+
+and the html file:
+<button (click) = "onLoadServers()">...</button>
+
+So this was how we programmatically routing to a different page and still it doesn't reload our page and it is the same behavior
+as we used routerLink() on that element which was clicked. But instead with .navigate() we can navigate to other path
+through our code.
+ -->
+<!-- Using relative paths in programmatic navigation:
+ -->
 
 <app-header (featureSelected)="onNavigate($event)"></app-header>
 <div class="container">
