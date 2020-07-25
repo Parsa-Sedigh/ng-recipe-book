@@ -1,1 +1,25 @@
-<p>recipe-item works!</p>
+<!--
+ Now we want to once we click on a recipe-item component, we pass the information of recipe-component , to recipe-detail
+ component to show those information in recipe-detail. So we must emit an event in the single recipe item which indicates it
+ was clicked and then we bind to this event that we emitted, in the parent of this component which is recipe-list component and
+ in that component we can bind this event to a method call and in the () of that method call (which is onRecipeSelected())
+ we can pass the current recipe which was clicked. But it doesn't need to pass the $event to onSelected() and then receive this
+ variable in onRecipeSelected() method in recipe-list component. Because we already have the recipeEl which will replicate each
+ element of recipe-item component so for each element of recipe-item it's absolutely clear, which element is that. TODO????
+ And again in recipeSelected() we must emit another event, because we aren't where we want to be yet! We have to again go up
+ one level further. Because we want to reach recipes component which is the one that implementing recipe-list component.
+
+ Learn: Custom events (the name of that custom event is the property that is stored the result of instanciating the EventEmitter()
+  class. ) , don't propagate up. So we can't listen to the event of a child of a child and ... .But we can listen to event which is
+  coming from child and not child of child and ... .-->
+
+<a href="#" class="list-group-item clearfix" (click)="onSelected()">
+    <div class="pull-left">
+      <h4 class="list-group-item-heading">{{ recipe.name }}</h4>
+      <p class="list-group-item-text">{{ recipe.description }}</p>
+    </div>
+  <span class="pull-right">
+      <!--  <img src="{{ recipe.imagePath }}" alt="" class="img-responsive" style="max-height: 50px;" >-->
+      <img [src]="recipe.imagePath" alt="" class="img-responsive" style="max-height: 50px;">
+  </span>
+</a>

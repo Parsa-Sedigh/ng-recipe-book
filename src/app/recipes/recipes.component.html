@@ -2,14 +2,38 @@
 
 <div class="row">
   <div class="col-md-5">
-    <app-recipe-list>
 
-    </app-recipe-list>
+    <!-- We assigned selectedRecipe to the result that is coming from recipeWasSelected custom event and that result is
+     recipe that was clicked by the user and $event in everywhere is the data which any event when triggered emit it.
+     So here when the recipeWasSelected custom event is triggered it would emit some data which can be received by using
+     $data. So here, $data is result of triggering the recipeWasSelected event.
+     Now we can pass the selectedRecipe property which has the result of triggering the recipeWasSelected event, to
+     recipe-detail component to show that information in that component. Because recipe-detail component is the child of
+     recipes component, we can pass info into that child, by binding a property of parent inside an instance of child component
+     which is instanciated in template of parent component.
+
+     Also we ONLY want to display the recipe-detail component if selectedRecipe property is set actually and is not undefined.
+     Remember: If something is undefined it would evaluated to false and if isn't set, we use <ng-template> and output a
+     dummy text and <ng-template> will receive a local reference and with that local reference is set on <ng-template> , now
+     we can use if ELSE syntax on <app-recipe-detail> So now because we have a local reference, we can add a semi colon after
+     the *ngIf statement in <app-recipe-detail> and after that semi colon, we can use the else statement.
+     When we say: ... ; else <the local reference which is set on <ng-template> , we are saying if angular goes to else statement,
+     that specific <ng-template> which have that local reference should be shown instead of current component which if else statement
+     are on it.>
+
+     Now we must pass the selected recipe to recipe-detail component which is the child of recipes component that we're currently
+     in it. For that, we go to that child component and add a property with @Input() decorator. We called that property, recipe .
+     Now you must go to place where you instanciate that child component in template of parent component and use [] to wrap
+     the property of child component in order to bind it to one of the properties of method calls of parent child which would
+     return the correct type which the property of child component expects it.-->
+<!--    <app-recipe-list (recipeWasSelected)="selectedRecipe = $event"></app-recipe-list>-->
+    <app-recipe-list></app-recipe-list>
   </div>
   <div class="col-md-7">
-    <app-recipe-detail>
-
-    </app-recipe-detail>
+    <app-recipe-detail *ngIf="selectedRecipe; else infoText" [recipe]="selectedRecipe"></app-recipe-detail>
+    <ng-template #infoText>
+      <p>Please select a recipe.</p>
+    </ng-template>
   </div>
 </div>
 

@@ -1,3 +1,5 @@
+<!-- To make the dropdown of navigation works, we must use directives. -->
+
 <nav class="navbar navbar-default">
   <div class="container-fluid">
     <div class="navbar-header">
@@ -6,11 +8,11 @@
 
     <div class="navbar-default">
       <ul class="nav navbar-nav">
-        <li><a href="#">Recipes</a></li>
-        <li><a href="#">Shopping List</a></li>
+        <li><a href="#" (click) = "onSelect('recipe')">Recipes</a></li>
+        <li><a href="#" (click)="onSelect('shopping-list')">Shopping List</a></li>
       </ul>
       <ul class="nav navbar-nav navbar-right">
-        <li class="dropdown">
+        <li class="dropdown" appDropDown>
           <a href="#" class="dropdown-toggle" role="button">Manage <span class="caret"></span></a>
 
           <!-- Dropdown menu: -->

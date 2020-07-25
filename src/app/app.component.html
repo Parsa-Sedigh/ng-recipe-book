@@ -41,7 +41,7 @@ We nest the recipe-item folder inside recipe-list because a recipe item is just 
  Binding to a property of a component outside of folder of component (binding to a custom property):
 
  Let's assume that we have a property in the class of our component and we want to bind to this property outside of folder of
- our component. So it would be like: [component] = "..." , now this would throw an error and the error would say: 'Can't bind to
+ our component. So it would be like: [property] = "..." , now this would throw an error and the error would say: 'Can't bind to
  <property>, since it isn't a known property of <selector of component>'. You might say. That isn't true. We defined that property
  to be a property of it's class.It's even public because I even didn't manipulate the accessor of that property. But the problem
  is by default all properties of components are only accessible INSIDE of their components and not from outside.So:
@@ -264,7 +264,13 @@ We nest the recipe-item folder inside recipe-list because a recipe item is just 
   First cut and paste that p element in between <app-server> tags. But right now it doesn't displayed on the page. Because
   by default we can't put anything in between where we use our component.
   For fixing that, we place <ng-content> opening and closing tags where the <p> elements where.
-  <ng-content> serves as a hook where you can place in your component template
+  <ng-content> serves as a hook where you can place in your component template to mark that place where you put it for angular
+  to ell it where it should add any content if it finds in between opening and closing tag of component selector.
+
+  But with this tiny addition, everything would work but there's a difference and that is the <p> element that you put between
+  the opening and closing tag of component, would be projected into your component.
+  Property binding would be an alternative to this approach and in property binding, angular would escape html tags because of
+  cross site scripting attacks but there's a workaround for that.
 
   server-component.html :
   ...
@@ -279,17 +285,859 @@ We nest the recipe-item folder inside recipe-list because a recipe item is just 
   </app-server>
   ...
   -->
+<!-- Component lifecycles:
+ ngOnInit() is a lifecycle hook and angular supports a couple of lifecycle hooks.
+ If a new component is created in angular and instanciated(by using the selector of that component in it's right way. For example
+ if the selector was a =n attr selector we must use that component in attr of an element and ...),
+ angular goes to a couple different of phases in this creation process and it will give us a chance to hook into those phases and
+ execute some code. We can hook into these phases by implementing some methods that angular will call those methods if they
+ are present and exist.
+ The first phase or the first hook that we can hook into it, is ngOnChanges and this actually maybe executed multiple times.
+ It's executed right at the start when a new component is created but thereafter, it's always also called whenever one of our
+ bound input properties changes(properties which are decorated with @Input()- so whenever these properties receives new values).
+ So it's called after a bound input property changes.
 
-<app-header></app-header>
+ The second hook is ngOnInit() . This method gets executed once the component gets initialized. Initialization finished does NOT mean
+ that we can see that component on the page. Because it hasn't added to the DOM yet (it has not been displayed yet). But it means that
+ angular finished the basic initialization and the properties of that component can now be accessed and are initialized.
+ So you can say the object is created in this phase and still we can't see the component itself.
+ Also ngOnInit() will run after the constructor() .
+
+ Third hook is ngDoCheck() . This will also run multiple times, actually this method will executed a lot. Because that will run
+ whenever change detection runs.
+
+ Change detection is the system which angular with this thing detects whether something changed on the inside of a component or
+ not?(so whether it needs to change something in the template or not?) . So whether value of properties changed and also that
+ property is output in the template. So because the property's value has changed and that value is used in the template, well
+ of course angular needs to re-render that part of the template and ngDoCheck() is a hook that gets executed on every check that
+ angular makes. Now important: On every check. So not if just something changed, but also a lot of times ngDoCheck() will run because
+ you clicked some button which doesn't change anything, but still it is an event and on events, angular has to check if something
+ changed. Because how else would it know?!! We don't tell it right?! So it has to check on certain triggering events like you
+ clicked somewhere or a timer fired or an observable was resolved, on all of these occasions angular will check your code
+ and ngDoCheck will run.
+ ngDoCheck is a very good method to use if you want to do something on every change detection cycle. Like in ngDoCheck maybe manually
+ we inform angular about some change it would not be able to detect otherwise.
+
+ ngAfterContentInit(): This is called whenever the content which is projected via @ngContent has been initialized.
+ So not the view of the component itself but instead the view of parent component especially the part which will get added
+ to our component through @ngContent from the view of parent component into our component.
+
+ ngAfterContentCheck: This is executed whenever change detection check the content we're projecting into our component.
+
+ ngAfterViewInit: This is executed once the view of our own component has been finished initializing. So once our view has
+ been rendered.
+
+ ngAfterViewChecked(): This is executed whenever our view has been checked. So once we're sure that either all changes
+ which had to be done, were displayed in the view or no changes were detected by angular.
+
+ ngOnDestroy() :If you destroy a component, for example if you placed *ngIf on component and the value of *ngIf gets false and
+ therefore it removes it from DOM, at that point ngOnDestroy is called and in that method is a great place to do some clean up
+ because this method is called right before the object itself will be destroyed by angular.
+
+ Whenever a new instance of a component is created all of those hooks would executed again, if the right time for them would come.
+ Because it's a brand new instance and doesn't have anything in common besides the class that it was created from, with the
+ previous instance of that component.
+
+ Remember: When you are using ngOnInit or other hooks, it's a good practice to show you're implementing those interfaces by
+ saying: export class MyClass implements onIt, onChanges ... {}
+ and then you must import onChanges and ... from '@angular/core' .
+
+ But if you don't do this it wouldn't throw an error, so implementing the method like ngOnChanges will do the trick but it's better
+ to be explicit about which interfaces your component is using. So we added implements onChanges and ... interfaces and also
+ we need to import all of these interfaces from '@angular/core'
+
+ ngOnChanges() is the only hook that actually receives an argument. We receive changes argument which is the type of
+ simpleChanges and we need to import this type from '@angular/core'. Now if you log to the console the changes arg,
+ it would be an object  which has element, which is the type of simpleChange and element is our bound property (the property
+ which has @Input() decorator on it) and angular simply gives us some information about this bound property, like what's the
+ current value of this property.
+ It also specifies if this was the first change?
+ Also it gives us the previous value and if it is undefined, it means we didn't change this property before.
+ -->
+<!-- Lifecycle hooks and template access:
+ With Angular8, in @ViewChild('<The reference to the element in template>') you must use {static: true} since we'll also
+ use the selected element in ngOnIt.
+
+ You can access to template elements ONLY AFTER ngViewInIt() so if you want to use the elements in for example ngDoCheck()
+ it wouldn't give you anything. But you can access them in ngViewInIt() and after this method.
+ The order of running hooks by angular:
+ ngOnChanges(), ngOnInit(), ngDoCheck(), ngAfterContentInit(), ngAfterContentChecked(), ngAfterViewInit(), ngAfterViewChecked()
+
+
+ -->
+<!-- In Angular 8 and +: To @ContentChild() and @ViewChild(), you must pass a second arg which is {static: true} if needed.
+TODO write the full notice...-->
+<!-- Getting access to <ng-content> with @ContentChild:
+ If you want to access to the projected content which is the content that is in between of opening and closing tags of
+ component which this component is used in other component in the template where this content would end up or in other words,
+ which is the template of component that this content is in it, first you must give those elements a local reference like
+ #<name of reference> . Now remember that you can access to this content that you use a local reference on it from the template
+ that it currently lives in it, by using @ViewChild(). Because this content is IN the template of this component even though
+ it WILL END UP in the template of the component which this content currently lives within it.
+ Since we know it would end up in the template of component which it currently lives within that component, it's good to
+ access this content from .ts file of that component. But in that .ts file, @ViewChild() won't work because that content is not
+ part of the view of that component instead it's it's part of the content of that component. Which is why we also have
+ separate hooks for them. contentInit() and viewInit() . So instead of @ViewChild() we can use @ContentChild() which also
+ must be imported from core. In this director, for it's first arg we pass the reference name and the second arg is:
+ {static: true} . Why we must pass in second arg? Because we'll use the selected element in ngOnInit() too and just
+ like @ViewChild() , we need to add a property in front of @ViewChild() to store that html code which in this case is content code
+ and it's the type of ElementRef and we can't access to that content or the properties of element that we declare a local
+ reference on it, before we reach ngContentInit() .
+ Remember that we use nativeElement on the property which we use @ViewChild() or @ContentChild() on it.
+
+ We use lifecycle hooks to run codes at specific times.
+
+ Learn: So we @ContentChild() to get access to content (which is some html of a component) which is placed in another component
+  but then would passed on to template of it's original component via <na-content> .
+
+ When you want to make an event which is inside the template of a component, listenable from outside of that component, first
+ you have to create a property for that component which would be a property that we can make that property to be a new instance
+ of EventEmitter<type of that property>() class. Now this property (event) can be caught from outside of that component and then
+ you have to use @Output() on that property. Now in other components you can listen to this event by first instanciate
+ that component and then use this piece of code as an attr of the instanciated component:
+
+ <instanciated component (name of event(property) = "<what happen when this event triggered? Maybe call a method on the component
+  which we are currently inside of the template of that component and the name of that method can be started by 'on...'.>")>
+ </instanciated component>
+
+ Also you can receive the data that we emitted in the parentheses of .emit(x) which in this case is x, in the method of component
+ which that method is calling when the event is triggered by passing $event variable to () of that method and by passing an
+ arg to definition of that method to get that $event.
+
+ When data would come from outside of a component, we must use @Input() on the property in the component that gets
+ that data from outside.
+  -->
+<!-- We need to manage which component should be displayed between <app-recipes> and <app-shopping-list> and we should determine
+which one is displayed in the header component. So we should kind of pass information that specifies which link was clicked.
+So then we can switch a property to only display one of those components in this template.
+After we find out which link was selected, we must inform the template that we want display just that component which is
+in relation to the clicked link. So we can use an event emitter.
+Then in header component we're listening to the that event and receives it's data by passing $event to () the method which must
+be executed(onNavigate() method) if that event was triggered.
+We defined onNavigate() method in app.component and not in header component because we want to use that method to change DOM in other
+parts of page not in header. So we define it in overall component.
+
+Remember: For using the properties of a component inside the template of that exact component, it doesn't need to emit that property
+of component. We can simply use it without anything else!
+
+IMPORTANT: When you define an EventEmitter<>() on a property of a component you can use that event ONLY ON THAT COMPONENT and
+ not on any other element or component which are in that template.
+
+Learn: For making a property which is now an event by using EventEmitter<>() on it, we can use @Output() on that property
+ to make this property listenable from parent components of that component.
+
+Learn:
+ When you add a for example click event to an element, it's better to call the method that would run after this event is
+ triggered: 'on...' .
+ -->
+
+<!-- Directives:
+Difference between attr and structural directives:
+Attr directives are called like that because they sit on elements! Just like attributes sit on elements and structural directives
+basically do the same but they also change the structure of DOM around the element that they used on that element. For example,
+if you have *ngIf on a <p> element, if the condition of *ngIf goes false, the paragraph would removed from DOM. So overall view
+is affected.Whereas about the attr directive, you never destroy! an element from the DOM. Instead you only change properties
+of that element. For example the background-color.
+
+So attr directives only affect the properties of the element that they sit on that element and:
+They look like a normal HTML attribute (possibly with data(property) binding or event binding)
+Only affect/change the element that they have sit on that element.
+
+Structural directives:
+They also look like normal html attrs but with having a leading * (for desugaring)
+Affect a whole area in the DOM (elements get added or removed)
+
+What does the * means on the structural directives?
+-->
+<!-- When you have:
+<p *ngFor="let number of numbers">
+...
+</p>
+ You can use that temporary number variable anywhere inside that the element which *ngFor is sits on so in this case <p> element.
+
+ Important: We can't have more than one structural directive on a single element. So you can't have sth like:
+  <p *ngFor="..." *ngIf="...">...</p>
+
+ Important: You found out that we can use directives also on normal html elements and not only on components.
+
+ Ex)
+ Here we're saying: If odd %2 === 0 , add the class1 to this element (we defined odd property in the .ts file).
+ <p [ngClass]="{class1: odd % 2 !== 0}">...</p>
+
+ When you use [] on an attr, it indicates that we're binding on that prop. So [ngClass] means we're binding to some property on
+ ngClass directive.
+
+ ngStyle allows us to pass an object again like ngClass:
+ Ex) <p [ngStyle]="{backgroundColor: odd % 2 === 0 ? 'yellow' : 'red'}">...</p>
+
+ You can use as many attr directive on a same element as you want. -->
+<!-- Creating a basic attr directive:
+ Let's create a directive which simply highlights an element that we hover on it. Of course we can acheive this task by using
+ ngStyle or ngClass simply! So let's create a folder inside app folder and call it basic-highlight and in there we create
+ basic-highlight.directive.ts and in that file we export a class called BasicHighlightDirective and now to make it a directive
+ instead of normal .ts class , we add
+ @Directive({
+
+ })
+
+ and we need to pass in an object to configure this new directive.
+ The one thing all of the directives need, is selector property in that config object. Because remember: We place directives in
+ our template to attach them to elements. So we need to have some way to give angular that instruction and that is the selector.
+ That selector also needs to be unique. Typically we use camel case for selector of directive. Like: 'app<CamelCase>'
+ Now that string that I wrote would select the newly created directive by element. Therefore for using that directive we must use
+ it like <directive></directive> . So it's better to write the selector in attr way. So we write it like '[appCamelCase]' instead of
+ 'appCamelCase'. So now we can use this directive like normal attrs.So like: <p attr>...</p>
+ In other words, think selector just like kinda css selector. In css when we select elements like [attr] , the elements which
+ are like: <element attr> would be selected and it's just like here.
+ So now this new directive would be recognized whenever we add appCamelCase without square brackets to an element.
+ Now let's change the background-color of the elements that this directive sits on them. For doing this task, we need to access
+ to the element the directive sits on it and angular gives us this access.
+ We can inject the element that the directive sits on, into this directive.
+
+ Injection is basically is an easy way to get access to some other classes (.ts classes not css classes!) without having them
+ to instantiate on our own.
+
+ Now for creating this directive, we list a couple of args we want to get, whenever an instance of this class is created and
+ of course angular is responsible for creating those instances. So therefore if we tell it to please give us a specific type of
+ arguments (which are specified in () of constructor()), this is what injection is. Angular will try to create this thing we need
+ and give it to us. Well 'this thing we need', in this case simply is a reference to the element that the directive was placed
+ on it. So we made a name for arg of constructor but it's type is important. It must be ElementRef
+ In @ViewChild() we also had a reference to an element which it's type was also ElementRef. Now in order to use the data we get
+ everywhere in the class, we must store it in a property but also we can use typescript shortcut of adding private accessor,
+ in front of the arg that is coming in the constructor(so it is in the parentheses of constructor). So this shortcut will make
+ the args which are in () of constructor of class, a property of class and also automatically assign the arg which is instance
+ we're getting from () of constructor to a property of class with same name.
+ (so like: this.<prop> = <arg in () of constructor>)
+
+ Now with this, we got access to the element, so we can use it.
+
+ Learn: Just like components, the directive also has the ngOnInit() lifecycle hook.
+
+ import {Directive, ElementRef, OnInit} from '@angular/core';
+ @Directive({
+    selector: '[appBasicHighlight]'
+ })
+ export class BasicHighlightDirective() implement OnInit {
+    constructor(private ElementRef: ElementRef) {}
+    ngOnInit(){
+
+    So what we're doing here is we're getting access to the element that directive was placed on and we're overriding the style
+    of that element.
+
+      this.ElementRef.nativeElement.style.backgroundColor = 'green';
+    }
+ }
+
+ To use this directive we have to do 2 things.
+ First, like for a component, we have to inform angular that we have a new directive. Because just like for components, angular
+ doesn't scan all of our files, so it doesn't know we created a new directive or component. So we have to go to app.module.ts
+ and in declarations array, we have to add the name of that directive and also add an import in that app.module which is
+ pointing towards the created directive. Now we informed angular, so we can use that new directive.
+ Now we can use our directive without setting any value for it and also we don't use square brackets for this created directive.
+ Because the directive name is just the selector string which is inside those [] and those square brackets are not part of
+ directive's name but they are part of selector style telling angular, "please select this directive as an attribute" so those
+ [] are not part of directive's name.
+ <p appBasicHighlight></p>-->
+<!-- As you can see in the previous comment, we are accessing the element by using nativeElement property and it's not a
+ good practice. You should use a different tool because angular is also able to render your templates without a DOM and then
+ these properties(like nativeElement) might not be available. It could do that when using service workers. So it's not a
+ good practice to directly access your elements.
+
+ There is other helper that you can inject. It's the renderer.
+
+ Learn: You can create new directive files with:
+  ng g directive(or just d) <name of directive>
+  then you can put files into their folders. Or also you can create a directives folder.
+
+ Now you need to pass renderer with type of Renderer2 into () of constructor. Also don't forget to import it from '@angular/core'
+ Now with inject that renderer, we can use it in ingOnInit() again.
+ On renderer, we have couple of methods that we can use to work with DOM. Like setStyle() . Now in order to use this method,
+ we need to have the element for which we want to set the style for it and there are some ways to get such an element and in
+ directive, we can simply inject the element reference which is by using an arg for that which with this new shortcut, this new
+ arg would be automatically assign to a private property, we called it elRef and it's type would be ElementRef. Also we need
+ to import ElementRef. Now we can pass the reference to that element which is a property in our class too (by using that shortcut)
+ by passing it to setStyle() method.
+ Remember that we can't pass the reference itself to the setStyle() method, but we need to get access to the element itself.
+ So therefore I used nativeElement property on reference of that element as the first arg.
+ In first arg we define which element we want to style by passing the element itself. In second arg we say which style we want
+ to set.
+ In fourth arg, we pass in flags object and this is optional. So maybe you want to add !important tag.
+
+import {Directive, ElementRef, OnInit} from '@angular/core';
+ @Directive({
+    selector: '[appBetterHighlight]'
+ })
+ export class BetterHighlightDirective() implement OnInit {
+    constructor(private elRef: ElementRef, private renderer: Renderer2) {}
+    ngOnInit(){
+      this.renderer.setStyle(this.elRef.nativeElement, 'background-color', 'blue');
+    }
+ }
+
+ ALso don't forget the app.module in this case too!
+
+ <p appBetterHighlight></p>
+
+ Why using a renderer is a better approach?
+ Angular is not limited to running in the browser, it also works with service workers and service workers are environments
+ that where you might not have access to DOM. So if you try to change the DOM as you did in the first example of this highlighter
+ directive, so by directly accessing the nativeElement and the style of element, you might get an error in some circumstances.
+
+ So it is good to use renderer for DOM access and also to use the methods that renderer provides like setStyle() and ...
+ to access the DOM. -->
+<!-- Using HostListeners to listen to host events:
+ Now we only want to change the background of that element, if we hover over that element and if we move the mouse away,
+ it should go back to transparent.
+ So now we need to react some events that occurring on the element that directive sits on it and an easy way of doing this
+ inside the directive is to simply add a new decorator and we want add this new decorator to a method we want to execute.
+ In this case, that method is mouseover.
+
+ Now that code inside @HostListener will occur whenever the event specified in the () of @HostListener() is triggered which we
+ pass the name of that event to () of @HostListener, as a string.
+
+ Remember: The name of mouseover is desired and you can choose whatever name you want. The name that is important is
+ the name of the event in () of @HostListener() .
+
+ mouseenter is one of the events that is supported by DOM elements which this directive sits on those elements.
+ You can also listen to custom events and retrieve the data that by triggering that event would emitted by adding an arg in
+ () of mouseover.
+ So @HostListener is just a convenient way of listening to events on that element.
+ So in this example, we are listening to mouseenter event and we get the data by triggering that event by using eventData arg.
+ Now we say whenever mouseenter event occurs, we want to change the background-color of the element.
+
+ import {Directive, ElementRef, OnInit} from '@angular/core';
+ @Directive({
+    selector: '[appBetterHighlight]'
+ })
+ export class BetterHighlightDirective() implement OnInit {
+    constructor(private elRef: ElementRef, private renderer: Renderer2) {}
+    ngOnInit(){
+
+    }
+
+    @HostListener ('mouseenter') mouseover(eventData: Event) {
+      this.renderer.setStyle(this.elRef.nativeElement, 'background-color', 'blue');
+    }
+
+    @HostListener ('mouseleave') mouseleave(eventData: Event) {
+      this.renderer.setStyle(this.elRef.nativeElement, 'background-color', 'transparent');
+    }
+ }
+
+ So now with @HostListener we're reacting to user events or to any custom events. -->
+<!-- Using @HostBinding() to bind to the host properties:
+ We have another decorator which allows us to not use the renderer. We can get an even easier way of simply changing the
+ background-color in this example. So we can use @HostBinding() decorator . First of all we need to bind this decorator to
+ some property which the value of that property will become important. So we created a new property for that decorator which in
+ this case is backgroundColor.
+ In @HostBinding() we can pass a string to it, defining which property of the hosting element we want to bind. Now properties
+ of the hosting element, that is what we also access in BasicHighlightDirective . style would be an example of such a property and
+ on that style property we have for example, backgroundColor property. So in () of @HostBinding() we can say 'style.backgroundColor'
+ camelCase of backgroundColor is important because we're accessing the DOM property which doesn't know dashes.
+ So with this we're telling angular that on the element this directive sits, please access the style property (which usually
+ all of the elements have, but for example for other directives which access sth like value property, this property is mostly on
+ <input> elements not all of the elements), but again, the style property is available on any element. So in () of @HostBinding()
+ we're accessing the style property which has a sub property called backgroundColor and we set this property equal to whatever
+ backgroundColor is set to.
+ So in the @HostBinding('style.backgroundColor') backgroundColor: string ;
+ we are assigning the value of 'style.backgroundColor' of the element to backgroundColor property in this class.
+ Also we need to set an initial value to backgroundColor property to not get an error when we mouse over the element for the
+ first time. So we set it to 'transparent'
+
+ Learn: DOM properties don't know dashes.So we use camel case for them.
+
+import {Directive, ElementRef, OnInit} from '@angular/core';
+ @Directive({
+    selector: '[appBetterHighlight]'
+ })
+ export class BetterHighlightDirective() implement OnInit {
+    @HostBinding('style.backgroundColor') backgroundColor: string = 'transparent';
+    constructor(private elRef: ElementRef, private renderer: Renderer2) {}
+    ngOnInit(){
+
+    }
+
+    @HostListener ('mouseenter') mouseover(eventData: Event) {
+      this.backgroundColor = 'blue';
+    }
+
+    @HostListener ('mouseleave') mouseleave(eventData: Event) {
+      this.backgroundColor = 'transparent';
+    }
+ }
+
+ So @HostListener() and @HostBinding() are great way for working with the element inside of directive definition and
+ of course in @HostBinding() you can bind to any property of the element that this directive sits on that element.
+ -->
+<!-- Binding to directive properties:
+ Right now, the colors of backgroundColor are hard coded, now we can make them dynamic by custom property binding.
+ Also custom event bindings work in custom directive definition. But you probably won't use them in directive definitions.
+ So now let's add 2 properties which we want to bind. But also again we are assigning some default colors for properties we
+ defined because we MUST have default colors for them to not get errors.
+ So we would have some default values for our dynamic backgroundColors but they can be overwritten from outside.
+
+ @Directive({
+    selector: '[appBetterHighlight]'
+ })
+ export class BetterHighlightDirective() implement OnInit {
+    @Input() defaultColor: string = 'transparent';
+    @Input() highlightColor: string = 'blue';
+    @HostBinding('style.backgroundColor') backgroundColor: string = this.defaultColor;
+    constructor(private elRef: ElementRef, private renderer: Renderer2) {}
+    ngOnInit(){
+
+    }
+
+    @HostListener ('mouseenter') mouseover(eventData: Event) {
+      this.backgroundColor = this.highlightColor;
+    }
+
+    @HostListener ('mouseleave') mouseleave(eventData: Event) {
+      this.backgroundColor = this.defaultColor;
+    }
+ }
+
+ Now it still is like before, but now we can bind those properties from outside which have @Input() on them.
+ So on elements from outside of this file, we can use this newly created directive. So first you must use this directive on
+ an element and then after that we can bind to those 2 properties. So like:
+ <p appBetterHighlight [defaultColor]="'yellow'" [highlightColor]="'red'"></p>
+ Notice that the directive's name itself is not in square brackets when you want to use this new directive.
+ But we get a bug because initially before we mouseover to the element that uses this directive, the background color of that
+ element is not set, but after first time mwe mouse over it and mouse leave on it, it would get it's default background-color.
+ The reason for that is when we assign default color in:
+ @HostBinding('style.backgroundColor') backgroundColor: string = this.defaultColor; line,
+ this.defaultColor is transparent for the first time. To prevent this, so let's take this line inside ngOnInit() so the
+ properties of any element which uses this directive is initialized with the colors that we bind to it's properties before
+ we see the actual element. Because now that element which uses this new directive would be initialized before anything has
+ rendered but after our values here are available.
+ So:
+ ngOnInit(){
+   this.backgroundColor = this.defaultColor;
+ }
+
+ Right now we have two looking-like directive things on the elements which are using this directive. An example of an element
+ which is using this directive and passing it the colors of background color to overwritten the default values would be:
+ <p appBetterHighlight [defaultColor] = "" [highlightColor] = ""></p>
+
+ So we have those 2 kind of looking directives in this example, so how angular knows that we want to bind to 2 properties of
+ <p> element which are default properties that are available on all <p> elements which don't have a defaultColor on it.
+ Or to a property of our custom directive?
+ The answer is that angular simply checks our own directives before it reaches the native properties of elements.
+ We can bind to properties of our own directives by simply placing them in [] .
+ But for ngClass , you see that somehow the directive itself is enclosed in [] and that's a typical use case specially
+ when you have only one property to bind or at least one main property, then you can provide an alias. So like ngClass
+ we can do that wrapping [] for name of selector of directive for our custom directive.
+ For doing that, let's provide an alias for let's say highlightColor property. So we give it an alias by adding a string inside
+ the () of @Input and that string would be the selector of our directive. So now if we set that as the alias for highlightColor,
+ using the directive like <p appBetterHighlight [defaultColor] = "" [highlightColor] = ""></p> won't work.
+ Instead you must enclose the name of directive in [] and set it to for example 'red'.
+ <p [appBetterHighlight]="'red'" [defaultColor] = ""></p>
+
+ But by default the directive name (which is used by selector of directive), is not enclosed in [] and that really happens
+ if you want to bind to a property which has the same name or alias as same as name of your directive(name of directive is
+ shown in selector property).
+
+ One thing that is true about property binding in general:
+ If you pass down a string like [appBetterHighlight]="'red'" (where we have [] and '' which is inside ""), we can remove
+ [] and '' . So it would be: appBetterHighlight="red"
+ So it's a special use case if you're passing down a string, you can use property binding without [] also you have to omit
+ the single quotation marks which are inside double quotation marks.
+ So if we use property binding like this, it's really clear and therefore no one thinks that this could be a REAL attr which
+ is existing by default for this element.
+ -->
+<!-- What happens behind the scenes on structural directives:
+ Why the * is required at leading of structural directives?
+ That * indicates to angular that this is a structural directive but the question is why angular needs to know?
+ Because structural directives with that * actually are just a nicer way for us to use them basically. Behind the scenes
+ angular will transfer structural directives into something else because there is no * in angular syntax when using
+ directives or using property binding or anything else. So there is no * operation. So behind the scenes angular needs to
+ transform *ngIf into something like property binding, or two way binding or string interpolation and ... .
+ For example if we want to write this code differently:
+ <div *ngIf="!onlyOdd">
+    ...
+ </div>
+
+ Alternatively:
+ Inside <ng-template> we must put the content that conditionally we want to render it.
+ <ng-template> is an element which itself is not rendered but allows us to define some code when the condition is true.
+ So now on <ng-template> we place ngIf but not with * . Because this is the form actually the *ngIf with * will transformed to
+ this form because of *. But now we place that ngIf without * inside [] and bind it to the condition.
+
+ <ng-template>
+    ...
+ </ng-template>-->
+<!-- Building our own structural directive:
+ Let's create a directive which would execute when the condition is false. So it's opposite of *ngIf .
+ Now in the body of class, we need to get the condition as an @Input() and then bind the condition we get to a property
+ named unless(the name is desired), so the condition would saved to this prop.
+ Whenever the condition changes, we want to execute a method and therefore we can implement a setter by using set keyword.
+ By using set on a property, that property would now a method so we must give it () too. But still it's a property but it's just
+ a setter of the property which is a method and gets executed whenever the property changes and it changes whenever this prop
+ changes outside of this directive, so whenever the condition we bind to this directive was changed or some parameters of this
+ condition was changed. So the unless property need to gets the property as the input so we added condition to GET the to it's () and
+ now because it's the opposite of *ngIf we check for !condition .
+
+ Keep in mind that our unless directive, will sit on such a <ng-template> component IN THE END because that component is what it gets
+ transformed to by angular, if we use the * operator. So we can get access to this <ng-template> and also we need to get
+ access to the place in the document where we want to render it.Both can be injected.
+ We injected <ng-template> (because our directive would be end up in <ng-template> so we need this element therefore we need
+ to inject it to the class.) in () of constructor() by using an arg like templateRef(you can name it anything you want) and
+ it's type is TemplateRef.
+ Learn: So just like ElementRef that gave us access to the element that the directive sits on it, TemplateRef does the same for
+  template.
+
+ The second information we need to inject is view container(where we should render it? that's what the view container shows us)
+ In other words, the template is what and now the question is where?
+ So in this case, vcRef marks the place that we placed this directive in the document.
+ Now we can use vcRef whenever the condition changes to call the createEmbeddedView method which creates a view in the passed
+ view container.
+
+ We call .clear() method to remove everything from that place in the DOM.
+
+ @Directive({
+    selector: '[appUnless]'
+ })
+ export class UnlessDirective() {
+    @Input() set unless(condition: string);
+
+    if (!condition) {
+      this.vcRef.createEmbeddedView(this.templateRef);
+    } else {
+      this.vcRef.clear();
+    }
+
+    constructor(private templateRef: TemplateRef<any>, private vcRef: ViewContainerRef) {
+
+    }
+ }
+
+ Don't forget to add the new created directive to declarations array in app.module and also import it there.
+
+ <div *appUnless= "onlyOdd">
+    ...
+ </div>
+
+ Using * is important, because although this is a custom directive but it's still a structural directive. Otherwise if you
+ didn't want to use *, we would have to manually write <ng-template> syntax like we did before.
+
+ Now we get an error that says we can't bind to appUnless because it's not a known property. Why?
+ Because with @Input() we're binding property which named unless but keep in mind that angular will automatically transform
+ this directive when is used on an element by using the selector of this directive to <ng-template> syntax which this syntax
+ would using the name of the property which is ???TODO
+
+ TODO WHY??? So we have to make sure that our property which is currently named unless, have the same name of directive. Exactly the
+ same as selector property.
+ -->
+<!-- ngSwitch structural directive:
+ First we bind to ngSwitch like property binding but without * at this point, and then in "" is what we want to check.
+ So:
+
+ <div [ngSwitch] = "<what we want to check>">
+  <p *ngSwitchCase = "1">message1</p>
+  <p *ngSwitchCase = "24">message2</p>
+  <p *ngSwitchCase = "35">message3</p>
+  <p *ngSwitchDefault>message4</p>
+ </div>
+
+ Now we need to add something to those <p> elements to control which <p> gets shown. That something is *ngSwitchCase
+
+ So if you find yourself creating a lot of *ngIf s , it's good to use [ngSwitch]-->
+<!-- Remember: Always select a UNIQUE name for selector property which is in the object that we pass in to @Directive() or
+ @Component() . So it won't intefere with an officially existing attr name.
+ -->
+
+<!-- Using services and dependency injection:
+ When you're duplicating code in two or more different components or if you write some code that you don't know you will use
+ it in some other parts of your app, in both use cases so duplication of code and providing data are typical use cases for
+ a service. Because a service is another class you can add which acts as a central repository or as a central business unit or
+ something you can store and centralize your code into that.
+ Also when we want to communicate between components, services can be helpful.
+
+ Why would you need services?
+
+ Create a logging service:
+ Now we want to create a logging service. Since it is a simple service we create it in app folder. Also you can create that file in
+ shared folder and the file name would be: logging.service.ts
+
+ Remember: A component becomes a component by attaching @Component() decorator and also a directive becomes a directive by
+ attaching @Directive() decorator to it's class.
+ But this isn't true about services. A service is just a normal ts class.
+ But how use services?
+ You might think, you can import the service file in the file you want to use that service and then instantiate that service's
+ class and then call the method on the object you created. This would worked But this is wrong because this is not how we use
+ services in angular.
+
+ Injecting the logging service into component:
+ We can use angular's dependency injector
+ A dependency is sth that a class of ours depends on it. For example the account component depends on loggingService because
+ we want to call a method in that service and the dependency injector simply injects this dependency or in other words,
+ injects an instance of this service into our component automatically.
+ All we need to do is to inform angular that we require such an instance. So we add a constructor to the component.
+ So we pass in an arg named loggingService and then we must add a type assignment and that type has to be the class you want
+ to get injected. In this case that class is LoggingService and this simple task (adding an arg which it's type is the
+ class that our component depends on it) tells angular that we will need an instance of this LoggingService.
+ Why this matter if we write it in the constructor?
+ Well we know that angular is responsible for giving us the instance of this component?
+ Angular because we're placing the selectors of components in our templates and when angular comes acrros these selectors,
+ it gives us instances of the components it see in the templates. Now since angular is responsible for instantiating our components,
+ angular will need to construct them correctly. So if we define in that constructor that we require some args, angular will
+ recognize it and now it tries to gives us that arg and in this case it would try to give us the type. So it knows that we want
+ an instance of the loggingService class because we defined the type.
+ Now angular knows WHAT we want but it doesn't know how HOW to give us such an instance. So we need to provide the service.
+ Provide means we tell angular how to create it. All we need to do is to add one additional property to @Component decorator
+ and it's providers property. The providers property takes an array and in there we need to specify the TYPE of what we want to
+ be able to get provided. Now with that, angular when analyzing that component, recognizes that it should be able to give us such
+ a LoggingService and when it actually builds the component (or constructs it), it sees that we want to have such an instance
+ and now in our component we can access loggingService property and call it's methods. So now instead of prior approach
+ we are NOT creating the instance MANUALLY, angular does it for us and why is it better?
+
+ Recap:
+ So first we need to add an arg in constructor of the component that simply gets the service and also the type of service we
+ want to inject is super important to tell angular about what we need in this component and add the type of service to providers
+ array.
+
+ @Component({
+    selector: ...,
+    ...
+    providers: [LoggingService]
+ })
+ export class <someClass> {
+    ...
+    constructor(private loggingService: LoggingService) {}
+    this.loggingService.logStatusChange(accountStatus);
+ }
+
+ Now we're injecting the LoggingService into our component.
+ -->
+<!-- Creating a data service:
+ export class AccountsService {
+    accounts = ... (some data);
+
+    addAccount (name: string, status: string) {}
+    constructor () {
+
+    }
+
+    some methods for updating the data
+ }
+
+ IMPORTANT: Most initializations of a component shouldn't be done in the constructor() but in the onInit() hook. For example
+  storing the args we get in () of constructor() should be done in ngOnInit() . If you don't use the .ts shortcut that we simply
+  add the accessor of properties in () of constructor and it will do the rest.
+
+ Understanding the hierarchial injector:
+ The angular dependency injector actually is a hierarchial injector, that means if we provide a service in some place of our app,
+ let's say on a component, angular knows how to create an instance of that service for this component and also all of it's
+ child components and actually this component and all of it's child components and their childs and ... will receive the
+ same instance of that service.
+ There are other places that we can provide a service too. The highest possible level is app.module.ts and if we provide a
+ service in that file, the SAME instance of the class of service is available in our WHOLE app.
+
+ The next place is app.component so in app.component and all of it's child components would have the same instance of that service
+ which we provided.
+ Learn: So generally if we provide a service in one component, all of it's childs also get the same instance of that service.
+
+ You might have an application where you want to have many different instances of the same service but you absolutely
+ don't want to have same instance.But sometimes you do want to have same instances. So it's possible to have 3 different instances
+ of one same service on a component that is like a child of some components.So maybe the first instance gets created in
+ app.component . So app.component receives it's own instance of that service and therefore all of it's child components get
+ that exact instance and again in hose child components we're providing the service and therefore they get their own instance
+ of service. So we are overwriting the instance we would get from the app component in it's childs.
+ So if you again use providers array and pass in the type of service in childes of app.component , therefore the child components
+ have their own instances of that same service.
+ How we can fix it? We just remove the type of that service from providers array in child components. But don't remove the
+ arg and it's type of service in () of constructor in child components.Because that arg tells angular that we want an
+ instance of service in this component, but providers array tells WHICH instance. So in there we need to remove it.
+ So leave the arg of service in child components and also the import statement of the file of that service in child components.
+ But remove the service type from providers array in child components.
+ So now we're using JUST ONE INSTANCE OF THAT SERVICE, by providing it in app.component file. Instead of creating different
+ instances and overwriting the instance that is coming from parent component and use different instance in each child component.
+ So it would be messed up.
+
+ So now let's add the service class we want to have, inside app.module and delete it from our component files. So now ONLY
+ app.module.ts file have the type of service class inside it's providers array. So now WHOLE application receives the SAME
+ instance of service. Now with this, we can even inject a service into another service because that's not possible by providing
+ the new service that we want to inject to another service, on component level. So we can't just provide the service that we want
+ to inject into another service, into a component. For example if we want to inject service2 inside service1, this code is
+ incorrect if we write it in component level(app.component or it's children):
+ providers: [service1, service2]
+
+ Instead we need to do this in app.module file. So we write all of the services in there.
+  -->
+<!-- Injecting services into services:
+For doing this, you must add an arg for the service you want to inject and also it's type in the () of constructor and also
+import the file of service you want to inject into this service at the top of this service file.
+
+Learn: So for injecting service1 into service2 , you must add an arg for service1 and it's type in constructor of service2
+ and if you want to use shortcut, you can say: constructor(private service2: type of service2) and then import the TYPE of
+ service1 at top of the file of service2. Also don't forget to add the services in app.module.ts file.
+ Now you might think that you can use the service1 inside service2 and for example call the methods of service1 and ... .
+ BUT NO YOU CAN'T.
+ It would throw an error which saying: Can't resolve all parameters of service2.
+
+ Important: The reason is if you inject a service into something, this something needs to have some metadata which is attached
+  to it. We knew a component has some metadata because we have @Component() before the class of component also a directive
+  has some metadata because we have @Directive() .But currently our services doesn't have any metadata.
+  Now you must add @Injectable() to the service that you want to service2 , or to the service that you want to inject another
+  service to it. This decorator tells angular that this service is injectable or in other words it's something that can be injected
+  So we added @Injectable() to the service that receives another service and you don't need to add this decorator to service1.
+
+  So if you don't want to inject anything in a service, you don't need to add @Injectable() to that service. So only add
+  @Injectable() , if you expect to something be injected in that file.
+  In other words, you really need to add @Injectable() if you would inject something into this service.So do not use @Injectable()
+  for this service if you just inject this service somewhere else and nothing would be injected into this service.
+
+  But it's a good practice to always add @Injectable() to ANY service.
+ -->
+<!-- Using services for cross-component communication:
+ Let's say when you click on a button which is in a componentA, you want to output something in componentB .
+ Normally, without services, we would have to emit an event in componentA and catch that event and then we would have to pass
+ the new data down via property binding to the component where we want to handle it.
+ Instead, we want to provide some event in service file which we can trigger in one component and listen to it in another
+ component. So we can use a service that create a new EventEmitter() and then inject the service into the component which we want
+ to emit that event from that component, so in that component file we use the service which is stored in a property of class of
+ that component and use .emit() method on it.
+ So now in component file, we are emitting the event that we set that event in service file.
+ So event emitter lives in service file but using emit() method for emitting that event, lives in the component file and now
+ in the component that we want to listen to this new event, we must get the service (we can do this by using an arg in
+ constructor() of this component and then store that arg which is the service type into a property of this component) and
+ when we get the service, maybe you call a method of that service and on that method, you use .subscribe() method and then
+ inside () of .subscribe() you can receive the data which the event you used .subscribe() on it, emitted.
+ Why .subscribe() ?
+ Because EventEmitter() in the end kinda wraps inside an observable.
+
+ So now with this approach we're not creating a chain of property and event binding for cross component communication,
+ instead we have cross component communication through a service which in that service we are creating an instance of
+ EventEmitter() class and then using .emit() in the component that emit the event and using .subscribe() in the component
+ which catch or receives the event or data.
+  -->
+<!-- We should place services, next to the feature or in the folder which is holding the feature that those feature belong
+ to that folder. So if we want to create a recipe service, the recipe folder looks like a good place for that service. -->
+<!-- Routing:
+ What if we want a page that you actually displays several pages. Now you might think for doing this task, we need actually
+  multiple pages or in other words you need multiple index.html files in order to have multiple pages in this website.
+  But you don't. Because angular ships with it's own router which allows you to change the url and still only use one page
+  but then exchange major parts or a lot of parts of that page. So to the user, it seems a new page was loaded because a lot
+  of things were changed. But behind the scenes, it is still JS which is changing a lot of parts in the DOM and therefore make
+  that page looks like a new page.
+
+  Why do we need a router?
+  Angular router needs to know which routes our front-end app has?
+
+  Now where we must define the routes for our app?
+  It's better to define our routes in app.module.ts file, because routes are application-wide and we know that the app.module.ts
+  file is an application-wide file.So in that file and above @NgModules() decorator, we add a new variable for our routes and this
+  variable which holds the routes of app must have a specific type and that type is Routes, which this type needs to be imported
+  from '@angular/router'.
+  Now this const should holds an array. Because we will have multiple routes and each route is a JS object.
+
+  Now the question is how a route must be configured in an angular app?
+  A route must follow a specific structure or pattern, so angular would be able to use that route and this structure always needs a
+  path. The path prop is what gets entered in the URL after the domain of website and make sure you don't add / at the beginning of
+  path prop. For example: path: 'users' means: localhost:4200/users and you shouldn't use / at the beginning of 'users'.
+
+  const appRoutes: Routes = [
+    {path: 'users', component: <some component that is looks like the PAGE you want to display>}
+  ];
+
+  Now you should define what should happen when that path is reached. The action typically is a component, so with this property
+  you inform angular that once this path is reached, a certain component should be loaded and that component will then be the PAGE
+  which gets loaded.
+  So in your app, you must configure the components that you want to use them as pages, so they must have all the content you want
+  to have on that page. So those components must ACTUALLY LOOK LIKE PAGES.
+
+  Also you can have '' for the path. Which is for base url. So like: localhost:4200 and for that you must use a component that
+  looks like the home page and of course you don't need to have such an empty string for handling the home page with this approach,
+  but then you somehow have to handle this route in a different approach.
+  Now they are defined but they alone won't do anything. How would angular know that you want to use that appRoutes constant?
+  So we must add a new element in imports array in app.module.ts file. We need to add RouterModule there and also import it from
+  '@angular/router'. So with this, we are adding the routing functionality to our app, but still our routes are not REGISTERED.
+  That is why RouterModule has a special method that we can call which allows us to register some routes for our main application
+  and the name of that method is forRoot() . Now we pass that constant to that method.
+  Now the missing piece is we need to have some place to render the currently selected component. Because if you look at the
+  app.component.html file, we still add our components with their selectors there. Now ok! We visit '.../users' , so angular
+  knows that we want to load the users page but how does it know where to display that users page in app.component.html?
+  So we must specify where we want to display the components which are for routes, in the app.component.html.
+  Therefore we need to use a special directive <router-outlet>. Now it's looks like a component but it's a directive.
+  Because we knew that directives may have selectors which make them look like components or also have selectors that make them
+  look like attrs and now with <router-outlet> we marked a place in our app.component.html where we want the angular router to load
+  the component of the currently selected route. So in <router-outlet> maybe the home component would be placed by angular IF the
+  user requested the home route and ... . So <router-outlet> is a place for placing the components which we specified them in
+  component property of the route objects in app.module.ts file.
+  Now if users write those routes in the url, they can see the app.component.html with the special component which we specified
+  for that specific route. -->
+<!-- Navigating with router links:
+ Right now we can navigating around by typing the url of that page manually in the url. So we need some links to navigate around
+ with them. So yeah! YOU COULD have some <a> elements with their href attrs which are like:
+ <a href="/users"> or <a href="/"> for home page. But currently if you click on those links the app would be refereshed! It means
+ for each click on those links, a new request gets sent to the server and as result, the new page is returned and since the
+ returned page from server is still on OUR angular app with the routes registered on it, it is able to gives us the correct route.
+ Also the same thing happen if we enter the route we want manually in the URL.
+ Therefore this is not good. Because this behavior our app on every navigation or entering a new url and that means the state in
+ whole app would be lost. So that is not how you should implement navigation(by using '/users' on href and ...).
+
+ Instead we must use a special directive. So first let's get rid of those href attrs on <a> elements. That directive is routerLink
+ and this directive is able to parse the string which is just a /... . Now this routerLink = "/" tells angular that the element which
+ this directive is currently on it, will serve as a link in the end, but it will handle the click event differently.
+ So for example: routerLink = "/users"
+
+ For example: routerLink = "/users" but this example is incorrect. Because:
+ this would search for a prop named /users which is even an invalid name in javascript and we don't have this prop.Instead
+ we have to pass a string with '' inside of "" . Or we can do better by adding [] inside of "" for value of routerLink directive and
+ also bind the directive itself. So we can also use property binding for routerLink too!
+ Because with this array, it would give you more control over routerLink. Now in that [], you specify all the segments of the
+ path, as elements in this array.
+ Important: In this case the first element of array NEEDS the leading or beginning / whereas when we were defining the routes
+  in app.module.ts and that's because by providing that / in FIRST ELEMENT of routerLink, we make that path an absolute path.
+  But the next elements of route shouldn't have /. So for example if we want to specify the users/profile path,
+  it would be:
+  routerLink = "[/users, profile]"
+
+  So we used array notation for value of routerLink's value, because by using [routerLink] = "['...', '...', ...]" notation instead of
+  routerLink = "''" notation, it allows you to construct complex paths very easily.
+
+  Now we haven't any reloading the app when we clicks on the element. Because routerLink catches the click event on the element
+  that it sits on it and prevents the default behavior of <a> which is it would send a request and instead of that, routerLink
+  analyzes what we passed to the it (that array of elements of path or url) and then parses and checks if it finds a fitting route
+  in our configuration in app.module.ts .
+ -->
+<!-- Understanding navigation paths:
+ What happens if we use the first segment of array of paths, without / . So like: [routerLink] = "['users']" instead of
+ [routerLink] = "['/users']" . Or routerLink = "'users'" instead of routerLink = "'users'" ?
+ Now if you click on links, you see they still works.
+ But now if you create a dummy <a> element which it's href is pointing towards the current page which itself is on that page.
+ So it's kinda a link for referesh that page. For example: If you're on .../servers page , let's create an anchor element which
+ it's ref is pointing towards this page again. So like: <a routerLink = "servers"> or <a [routerLink] = "['servers']">
+ Now if you click on this <a> element, it would give you an error and the error occurs because it doesn't find a route which is
+ 'servers/servers' . Now this error won't happen if we change <a routerLink = "servers"> to <a routerLink = "/servers"> and ... .
+ In other words we must change that path to an absolute path (we changed it from 'servers' to an absolute path which starts with
+ / . So '/servers'). So we turned the path from a relative path to an absolute path. So now if we click on that <a> it would go
+ to .../servers instead of .../servers/servers
+
+ Learn:So by using relative paths, it always appends the path you specified in routerLink to the end of your current path and
+  the current path depends on which component you're currently on. That is why we COULD remove that beginning / from
+  app.component.html . Because that is in our root component.
+  The app.component is not loaded through the router. So this app.component is the root component which always sits at
+  localhost:4200 or localhost:4200/ . So that component is always at the root level and this is why we can ALSO use relative paths
+  in that component. But even one layer below this root level, once we loaded a route, that page is loaded if we are at
+  /<page> and if we use <page> instead of /<page> , the <page> segment would APPEND to the route that we're currently on that.
+  So it will try to load <page>/<page> and therefore it gives us error. Because we haven't registered <page>/<page> .
+
+  Learn: You can also use relative paths by using ./ at the beginning of path. It's same as writing nothing. So:
+   './servers' is the same as 'servers' and both are relative paths.
+
+  In angular you can even navigate around like when you're in folder directories. So like using ../ . So '../servers' means
+  first go one level up in directories and then append(WHY append? Because here we're using relative path) 'servers' to the path.
+  But for example if you were on: '.../servers/something' route,
+  -->
+
+
+<app-header (featureSelected)="onNavigate($event)"></app-header>
 <div class="container">
   <div class="row">
     <div class="col-md-12">
-      <app-recipes>
-
-      </app-recipes>
-      <app-shopping-list>
-
-      </app-shopping-list>
+      <app-recipes *ngIf="loadedFeature === 'recipe'"></app-recipes>
+      <app-shopping-list *ngIf="loadedFeature === 'shopping-list'"></app-shopping-list>
     </div>
   </div>
 </div>
