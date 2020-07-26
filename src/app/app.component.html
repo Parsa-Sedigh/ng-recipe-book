@@ -1215,7 +1215,299 @@ as we used routerLink() on that element which was clicked. But instead with .nav
 through our code.
  -->
 <!-- Using relative paths in programmatic navigation:
+ Learn: When you send a request, the reload icon or the spinner in the browser starts to working. But in angular we can reload
+  the current page without sending the request to server.
+
+ In the last example if you had this.router.navigate(['servers']); (relative path instead of absolute path), you wouldn't get
+ an error. But if you were used routerLink="['servers']" , you would get an error. Because in that case if you click on the
+ <button> , it would go to .../servers/servers .
+ So why does it work fine if we use .navigate() method even with relative paths?
+ Because unlink the routerLink , the navigate() method doesn't know on which route you're currently on. In other words,
+ the routerLink always knows on which component it sits and therefore it knows what is the currently loaded route.
+
+ To tell navigate() method on which route we are currently in, we pass it the second arg and it would be a JS object and in that
+ object we can configure the navigate() method. One configuration is to set the relativeTo prop. This prop is where we define
+ relative to which router, this link should be loaded and by default, the value of that prop is root domain, which is why we
+ didn't get any error for that relative path which was used with navigate() method. For the value of this prop, we must pass it
+ a route which is not a string and we can inject or import it in the () of constructor. So we can get the currently active route
+ by including an arg in () of constructor which is type of ActivatedRoute and it's type is important. But the name of that arg
+ is not crucial. But in this case we named it route arg which because of shortcut, it would create a property with the same name.
+ ActivatedRoute simply injects the currently active route. So for the component which is currently loaded, the ActivatedRoute arg and
+ it's property would be the current route that you're on it and that prop which would get the ActivatedRoute arg in this case the
+ name of that route is route, that prop would be a complex JS object which keeps a lot of meta information about the currently
+ active route.
+ Now by setting relativeTo prop to the current route which we got from ActivatedRoute arg which it's name and it's name of prop in
+ this case is route, angular knows what our currently active route is.
+ Learn: So we ar saying, we must navigate to other routes, relative to the current route we are on it.
+
+<button (click) = "onReload()">...</button>
+
+import {Component, OnInit} from '@angular/core';
+import {Router, ActivatedRoute} from '@angular/router';
+@Component({...})
+export class HomeComponent {
+    constructor(private router: Router, private route: ActivatedRoute) {}
+    ngOnInit() {}
+    onReload () {
+       this.router.navigate(['servers'], {relativeTo: this.route});
+    }
+}
+
+Now if we click on that <button> , it would throw an error, like when we're using routerLink. So wewould go to .../servers/servers
+
  -->
+<!-- Passing parameters to the routes:
+ We want to load the profile of a user dynamically. So we can add parameters in routes and this parameters are dynamic segments \
+ in the routes. We add them by using a colon and any name you want for that parameter. Like :id .
+ You later will be able to retreive that parameter which is in the url, INSIDE THE LOADED COMPONENT by the name of that parameter.
+ The : in route, tells angular that this is a dynamic part of the path.
+ The differences of these two are in the first one, just '.../users/id' would be the path and the id means the exact word of id
+ would be the path. But in second one, it would be '.../<anything>' . So in defining the routes in the app.module.ts file , if
+ we would have:
+ const appRoutes = {
+    {path: 'users/:id', component: UserComponent}
+ };
+
+ The routes which are <domain>/users/<anything> would lead to UserComponent and that something means anything we place in that
+ segment would load the UserComponent and it shouldn't even be a number CURRENTLY.
+
+ So this is how we can dynamically load some route or in other words how we can encode some data into a path.
+ Now how we can get access to that dynamic data which is in the path, INSIDE THE LOADED COMPONENT(the component which that route
+ would lead to that component).
+
+ Fetching(getting) route parameters:
+ So we know that with dynamic segments in the route, there would be some data in that dynamic route. For getting access to that
+ dynamic segment in .ts file, we need to import ActivatedRoute type and therefore we need to create an arg inside the () of
+ constructor() and then we can use shortcut and we know by injecting or importing the ActivatedRoute by using an arg in () of
+ constructor, we get access to the currently loaded route and we know this currently loaded route(which in the beginning is in the
+ arg in constructor but after that we must STORE IT IN A PROP OF THAT CLASS IN .ts file) is a JS object with a lot of metadata about
+ that currently loaded route. One of those crucial things is currently passed dynamic segment.
+ Learn: So by using ActivatedRoute object which is in the prop of class that we store the arg of ActivatedRoute in that prop,
+  we have access to that dynamic segment in the url.
+
+ We can set things up, so when the component which the route would load it, had initialized (so in ngOnInit() method),
+ Learn: we get access to the dynamic segment by using:
+  this.<the prop which stored the ActivatedRoute arg>.snapshot.params['<the name of that dynamic segment so like:
+  :<the name of segment> >']
+  So if we have .../:id in the url, we can get the value of that dynamic segment by using:
+  this.route.snapshot.params['id']
+  -->
+<!-- Fetching route parameters(not query parameters!) reactively:
+ If you use a routerLink, in the html template of component that would be loaded if we hit a route which has dynamic segments,
+ and in that routerLink you go to route but still in the same structure of that route (for example in the template which
+ .../10/parsa will load that component, in that template, go to .../8/soheil) , the content of that component won't updated!
+ It's not a bug, it's a default behavior. What's going on?
+ We load the data which is dynamic based on the dynamic segments of url, by using snapshot prop which is available on the
+ ActivatedRoute prop in the class of that component. Now if we load a new route(like the prior example) what would happen?
+ What happens when the route is changed is angular looks at app.module.ts file and hopefully finds the route which we were
+ requested, then loads the component which that route would load up it, then initialize the component and gives us the dynamic
+ data which was changed because the dynamic route was changed. IMPORTANT: NOW THIS BEHAVIOR WOULD HAPPEN IF WE HAVE'NT ON THIS
+ COMPONENT BEFORE!
+ So if we WERE on that component which would loaded if we hit that route, BEFORE, the old url would be changed, but the
+ old data won't change, because we were on that component before!
+ Recap: If we click a link which is on the template which would be loaded if that route was reached, and the target or routerLink
+ of that link is AGAIN that dynamic component (dynamic component is a component that uses the data which is because of dynamic
+ segments), the url would changed to the new url but we are ALREADY in the component which should get loaded because the url
+ was changed. So angular cleverly doesn't really instantiate this component, because if it instantiate this component, this work
+ would only cost us performance. Why angular would want to re-render a component which we're already on it? Now you might say:
+ "Because the data which is based on the dynamic segments, has changed!!! So angular must re-render that component!"
+ But angular doesn't know and this good that by default it doesn't recreate the whole component and destroy the old componen, if
+ we ALREADY are on that component.
+ But we want the updated data on the same component, right?
+ It's fine to use snapshot property for FIRST initialization. But to be able to react to subsequent changes, we need a different
+ approach.
+
+ So in ngOnInit() after the first initialization, we can use params prop on the route itself and not on snapshot prop.
+ What's the difference? In the second approach, params prop is an observable. So we have an async task. Because the parameters
+ of your currently loaded route might change at some point in the future, if user clicks that link(which would redirect to this
+ component but with different dynamic segments). But you don't know when the user would click on the button and also you don't
+ if he even would do that and also you don't know how long it would take to redirect to the same component but with different
+ url. So therefore, you can't block your code and after blocking, wait for that to happen. Because it might never happen.
+ Learn: So an observable is an easy way to subscribe to an event which that event MIGHT HAPPEN IN THE FUTURE, to then execute
+  some code when that event happen without having to wait for that event to happen from now until it happens. So this is
+  what params is. params property is such an observable and therefore we can observe this prop by subscribing to that observable.
+  Basically observables are feature added by some other 3-party packages and not by angular but this feature is heavily
+  used by angular which observables allow you to easily work with async tasks.
+
+  Learn: .subscribe() can take 3 functions as args. The first arg or function(in this case), would be fired whenever new data
+   is sent through that observable or in this case(when using params observable, when a new url is requested, so the data that
+   is sent through this url is changed. The data in this case is url), when parameters in the url changes. So after a parameter
+   is changed, the first arg is executed and in the function of first arg, in this case, we can get the updated params as an
+   arg and this arg would be an object. Because params will always an object, just like when using .snapshot or using it in here
+   and this object, holds the parameters that are in url.
+   Now in the body of first function, we can update the data that we expect to updated when that event occurs.
+   So in this case we can update the id of user.
+
+import {Component, OnInit} from '@angular/core';
+import {ActivatedRoute, Params} from '@angular/router';
+@Component({...})
+export class UserComponent implements OnInit{
+    user: {id: number};
+
+    constructor(private route: ActivatedRoute) {}
+    ngOnInit() {
+      /*First initialization(which won't get updated when we WERE on this component before and again load this component again but
+      with a different parameters in url.)
+      So for first initialization of this component, we can use snapshot property but for later reloads of this page, we are
+      using params property directly on route instead of using on snapshot and then route prop.*/
+      this.user = {
+         id: this.route.snapshot.params['id'],
+         name: this.route.snapshot.params['name'],
+      };
+
+      /*This snippet will update the user object(which is from the dynamic segments of url), WHENEVER(we don't know when so we must
+      use a callback function) the url changes. That's why it's inside of this callback function it is passed to the subscribe()
+      method. Important: The callback function inside subscribe() method, won't executed when ngOnInit is executing. So
+      when ngOnInit() is executing, ONLY the subscribtion to that event is set up and the code inside subscribe method won't
+      executed, but only if the parameters of url changes (not in the first time we go to this route and not from other routes
+      we went to this route- only if we WERE on this component and again we reload the page or requested this route with another
+      parameters.) we will call the callback function inside subscribe() method. */
+
+      this.route.params.subscribe((params: Params) => {
+          this.user.id = params['id'];
+          this.user.name = params['name'];
+      });
+    }
+
+}
+
+Now if you're sure that the component you're on it CURRENTLY, may never be reloaded from WITHIN that component, then you might not
+need this extra code. You might need to just use snapshot. So if you know that this component in 100% of times be RECREATED and
+doesn't need to update it's data based on changes in parameters of url, you don't need to subscribe to route.
+But you can use that subscribe() to get informed about any changes in the route parameters.
+
+So we learned how we can subscribe to the current parameters of url to update them or to react to any changes to them and
+then update our page, IF WE ARE ALREADY ON THAT PAGE.
+
+Also remember that angular will clear this subscription you set there, whenever that component is destroyed. Because if it wouldn't
+do this, what are you doing here? You're subscribing to url parameter changes and let's say you leave this component and later
+you come back. Well once you left this component(for example you go to completely different url-completely means you didn't
+just change the parameters, but you go to completely different url, but if you just change the parameters, the component won't
+be destroyed and you're still in the same component), this component will be destroyed and when you come back a new one
+is created. But this subscription will always live in the memory. Because it's not closely tied to your component. So if the
+component was destroyed, the subscription won't. Angular handles this destroying of subscription for you. But maybe you want
+to implement onDestroy() lifecycle hook. Then you can implement ngOnDestroy() and then you can store the subscription on a
+prop and you must import Subscription type from 'rxjs/Subscription'.
+Now after creating a property which is type Subscription, this prop must now bind to the subscription we have in our code
+(assign the code we had to this newly created prop) and now in the ngOnDestroy() (which would be executed when the component
+gets destroyed), we access to this newly created prop and use unsubscribe() on it. AGAIN: You don't have to do this and you can
+leave the code, like the last code we had, because angular will do this thing we're doing here for us regarding these
+route observables. Learn: But if you add your own observables, you have to unsubscribe it on your own.
+EX)
+import {Component, OnInit, OnDestroy} from '@angular/core';
+import {ActivatedRoute, Params} from '@angular/router';
+@Component({...})
+export class UserComponent implements OnInit, OnDestroy {
+    user: {id: number};
+    paramsSubscription: Subscription;
+
+    constructor(private route: ActivatedRoute) {}
+    ngOnInit() {
+      this.user = {
+         id: this.route.snapshot.params['id'],
+         name: this.route.snapshot.params['name'],
+      };
+        this.paramsSubscription = this.route.params.subscribe((params: Params) => {
+            this.user.id = params['id'];
+            this.user.name = params['name'];
+        });
+      }
+
+      ngOnDestroy () {
+        this.paramsSubscription.unsubscribe();
+      }
+}
+
+rxjs package is not shipping with angular but angular is using this package.
+
+ -->
+<!-- Passing QUERY parameters(and not parameters but QUERY parameters) and fragments:
+Query parameters are separated by question mark. For example: <domain>/parameters?queryParameters So like:
+ localhost:4200/4/parsa?mode=editing&access=private
+ The question is how we can pass these query parameters by using angular links
+ (Important: If you want to use <a> for routing and navigating, you must delete href attr and use attrLink)?
+ and how you can then retrieve those query params?
+ You might also have a # fragment. So like ...#<something> , it's use to jump to a specific place in your app.
+ So how we can pass and retreive them with those 2 approaches. 1) Using routerLink directive 2) navigate() method in .ts file
+
+ So for example let's create a new route in app.module.ts file, like: {path: 'servers/:id/edit', component: EditServerComponent}
+
+ Now to be able to load or navigate to this new route from another component like servers component, which has a route of
+ .../servers , we can for example create an anchor element, like: and let's use [] syntax so we can pass an array of segments to
+ routerLink directive.
+ Important: Right now you're on .../servers but you want to go to .../servers/... . But you can't omit servers segment here.
+  Therefore you can't say, I'm on .../servers so we can just go to REMAINING parts of the route we want to go. NOOOOO!
+  It's better to use absolute paths. So in absolute paths it doesn't matter where you are currently. You must always start
+  from root. Therefore in here we also specified 'servers' segment again, although we're currently in .../servers
+ <a
+  [routerLink] = "['servers', 5, 'edit']"
+  [queryParams] = "{allowEdit: 1}"
+  fragment = "'loading'"></a>
+ Now let's add query parameters too. We don't do that by adding '?=' as another element of this array!
+ Instead, when we're using a link in the template, we add a new prop of this routerLink directive and that prop is queryParams
+ and we can bind to this prop. But remember that queryParams is not a new directive, it's just another bindable property of the
+ routerLink directive and to this prop, we have to pass a JS object and in this object we use key value pairs of query parameters
+ that we want to edit.
+ Now if you click that <a> element, you see we have ...?allowEdit=1#loading now.
+
+ We also have [fragment] property. You can pass in a string('') to "", therefore you can omit the [] for fragment.
+
+ Let's now see how we can set these things up programmatically. So instead of setting them in template file, we can pass
+ them in .ts file.
+ Programmatical approach is how we use .ts code for routing and navigating.
+ So we can have something like: <button (click) = "onLoadServer(1)">Load server 1</button>
+ for the template which when we clicked on it, a method would be called and then in
+ that method we would set those query params and fragments programmatically.
+
+ .ts file for that little html template:
+ For adding those query parameters and fragments we use an object in navigate() method and in that object we use queryParams
+ property.
+ onLoadServer(id: number) {
+    this,router.navigate(['/servers', id, 'edit'], {queryParams: {allowEdit: '1', fragment: 'loading'}});
+  }
+
+15. Retrieving Query Parameters and Fragments
+We find out how to pass query parameters and fragments, now we want to retreive them.
+Again like retreiving  parameters, we need to create an arg with any name you want but with ActivatedRoute type in the constructor
+of the component which would be loaded if we go to that route which that route has those query params and fragments that we want
+to retreive in the .ts file of that component.
+Also make sure that you place the import expressions for core angular modules and packages, BEFORE the import expressions of your
+created files.
+There are 2 ways of retreiving them, just like parameters.
+In the first approach we can simply access the snapshot prop of the route that we're currently in that route and then access
+queryParams prop or fragment prop of snapshot prop.
+Important: The first approach might bring the same problem that we had with params too and that problem is that this code would
+ only run or updated at the time which this component is created. So if there's a chance of changing your query params or
+ fragments from the page that you're currently on and after that change in query params or fragments, again you must go
+ to that page with changes in query params or fragments, you shouldn't use this approach. Because this approach isn't reactive.
+ It won't display or allow you to react to any changes which happen after this component has been loaded. But also note that
+ if you go to another component and come back to this component, it WILL update the data which is based on query params and
+ fragments.
+
+The second is to use subscribe() method on queryParams which like params is an observable directly on route (route is the name of
+arg and prop (because we used shortcuts so the name of arg and prop which stores that arg of constructor is equal)) and also
+we have fragment as an observable, so we can subscribe to it. So with using this approach we can react to changes to query parameters.
+Also you don't need to unsubscribe() them here, because angular will do it for you.
+Remember that in second approach we STILL use the snapshot property at the beginning to retreive the params or query params or
+fragments for the first time. But if you reload the current route with different params or ... the data which is based on params
+and ... won't updated. So we must add some code to it and that is we must use params or queryParams or fragment on route and
+subscribe() to them(use subscribe() method on them).
+So:
+ngOnInit() {
+  this.route.queryParams.subscribe();
+  this.route.fragment.subscribe();
+}
+
+Remember: If we parse a parameter from our URL, it will always be a string. Because our whole URL is simply just a text.
+So if you are retreiving a number like text from url, like id, make sure to convert it to a number if you expect to ge a number
+from the url. You can make a text that is like a number(like '123') by adding a + in front of it.
+So like:
+const id = +this.route.snapshot.params['id'];
+  -->
+<!-- 17. Setting up Child (Nested) Routes:
+ -->
+
+
 
 <app-header (featureSelected)="onNavigate($event)"></app-header>
 <div class="container">
