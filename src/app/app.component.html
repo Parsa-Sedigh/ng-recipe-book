@@ -1913,16 +1913,145 @@ Learn: We defined an interface named Server. So we can replace the type definiti
 
  In return statement of resolve in server-resolver.service.ts file, we are getting the route in that method. The route is only a
  snapshot, so the route which is a snapshot won't be updated if we were on that route and reload it with other params. But in this
- case it doesn't matter. Because the service that
-  -->
+ case it doesn't matter. Because the service which uses snapshot for getting the params, would be executed each time we rerender
+ the route.So snapshot prop is all we need. So again, unlike the component itself, the service is executed each time, so for
+ service to getting the params and ..., we don't need to use the subscribe() and ...
+ Now add this new service in providers array in app.module.ts file. Now where we want to use it? Right, in app-routing file.
+ For the path that you want to use this service, you can add the resolve property and resolve prop takes a JS object and in that
+ object we define key-value pairs and the name of the key is up to you.
+ This prop is different to properties which we add guard files to them like canActive or canDeactive. In those props, we use
+ arrays for their values.Why we have this difference? You'll see.
+ Now by adding that resolver service to resolve prop in that path, the route will map the data which resolver service gave to that
+ route. Why resolver service gave us that data? We didn't even call that method? Because that method will be called by angular when
+ the route which this service is used in it, is loaded.
+ Learn: So when that route is loaded, angular will call the resolver service's resolve() method automatically.
+  So the data that resolver-service gave us back, would be stored in the key. (Remember that we had key-value pairs in resolve
+  property. So the data that value would return, will be stored in key). So in this case, the data that ServerResolver would be
+  give us back, will be stored in server and we have this key, available in the component which would be loaded for that route.
+
+  Also a resolver can handle both async and sync codes.
+
+   Currently we are getting the server by using serverService. So we can comment it our. Because now we want to use a resolver
+   for this task. So I commented out some code in ngOnInit() of server.component.ts . There, we can easily get the return value
+   of that resolve() method which is the server object that you were requested, by binding the data observable.
+   So just like static data which you passed with data object for a route in routes definition in app-routing file, the data which
+   is returned from your resolver will also go into data object which you have access to that data object in your loaded component
+   for the route.
+
+  Learn:
+   Recap: For passing static data and then using that data: For passing the static data into a component which would be loaded for
+   a route, you must provide that static data in the object for that route in route definitions in app-routing file, in the
+   data property which this data property is an object and you can pass your static data to this data object by providing a key-value
+   pair for each of your static data. For example we want to pass the name and age of a person and this name and age would be available
+   for the component that we specified for that route. For doing this task in data prop we specify 2 key-value pairs:
+   data: {name: 'parsa', age: 20} . Now we passed that static data for the component which would be loaded when we enter that route.
+   How we gonna access that static data? First we must provide the ActivatedRoute type in () of constructor() of the .ts file of
+   the loaded component and then store that arg in a prop of that class and then use that prop by using it's property called
+   snapshot and then on that snapshot we have data prop which is that data prop in the route definitions and then provide a []
+   and in that square brackets we write the key name of that data we want to use. Also you can use subscribe snippet code for
+   updating and ...
+
+   For passing DYNAMIC data and then using that data in the component of a route:
+   For passing that dynamic data, we must create a resolver service and implement Resolve interface of angular and we know that
+   the Resolve interface of angular requires the class that implemented it to implement it's resolve() method. So we must also do
+   this in our resolver service which this resolve() method would return the dynamic data that we want in our components. Each
+   resolver service is for it's specified component and would return the dynamic data for that specified component.
+   So after creating that resolver service, we must include that service in the component which wants the dynamic data, by
+   providing an arg in () of constructor of that component and then store that arg in a prop. So now the component has the data.
+   Now we must use that data which is provided by that service for the component.
+   For doing that, first you must include the ActivatedRoute type in () of constructor() of that component and then store it
+   in a prop of the class of that component. So that prop would have the current route and then say:
+   this.<name of prop which has the ActivatedRoute type>.data.subscribe((data: Data) => {
+      this.<the prop> = data<or whatever name you used for arg of this callback>['<the prop name in resolve object in app-routing file
+      which the service you used, is assigned to this prop in that resolve obj>']
+   });
+
+   data prop which is an observable is like that data object in static data passing and using. By saying .subscribe() on data
+   object in this case, we're listening to any any changes on data object(listening, because it is dynamic and may change) and
+   here we're using an observable which is data because the server can changed so the data can change, so we must subscribe() to
+   it and in subscribe() we know we would get back our data.
+
+   A resolver service is very crucial if we would get some data asyncronously.
+   -->
+<!-- 30. Understanding Location Strategies:
+ If you have a route for example like: <domain>/servers on a real web server , app might not work out of the box. Because the URL is
+ always parsed(handled) by the server(the server which hosts your app) first. Now here, in our local development environment,
+ we're using a development server, but this server has one special configuration which the real servers which host your app
+ also has to configured, so when user sees 404 page, the server must returns index.html file(the file containing and starting
+ your angular app) why?
+ Because all of your URLs are parsed by the server first. So not by angular, but by the server. Now if you have for example .../servers
+ it will look for a .../servers route on the server. Now chances are you don't have that route here because you only have one file
+ there, which is index.html which this file is containing your angular app BUT you want angular to take over instead of server and
+ parse this .../route.But it will never get a chance because the server which is hosting your angular app doesn't know the route
+ so it would give 404 page. Therefore you need to make sure that in this case, your web server returns the index.html file instead of
+ 404 page. But if for some reason, you can't get this to work or you need to support very old browsers which those browsers are
+ not able to parse paths like .../servers in the client which angular does, you have an alternative approach to using those nice
+ urls like .../servers . That alternative is to using # signs in your routes.
+ You can enable that feature in app-routing.ts file where you register your routes by using RouterModule.forRoot(<name of array of
+ the routes>) . You can pass a second arg which is a JS object which configures the setup of the routes.
+ So the first arg is about routes themselves and the second arg is configuration of them. In this case we use: useHash: true;
+ the default value is false. So now the url of website would like: <domain>/#/...
+ So for example when in the past we had .../servers , after this configuration we have .../#/servers , this is hash mode routing.
+ What this hashtag will do is: it informs your web server, "hey! Only care about the part in this url, before this hashtag".
+ So all of the parts of url that are after #, would be ignored by your web server. Therefore, these kind of urls, will run even
+ on servers which don't return the index.html file in case of 404 errors. Because those servers with this config, will only
+ care about the part before # and the parts after the # can now be parsed by client, like angular.
+
+ Prettier routes using the html history mode are normal slash routes without #.
+ -->
+
+<!-- Observables
+An observable is like a data source. Now in our angular project, an observable is basically just an object which we import from
+a 3rd party package named rxjs. The observable here, is implemented in a way that it follows the observable pattern. So we have
+an observable and an observer. In between of these 2, we have a stream or a timeline and on this timeline, we can have multiple events
+which these events are emitted by observable or data package which emitted by the observable which these 2 reasons of emitting the events
+depend on data source of that observable. So the that observable could emit data because you trigger that observable to emit data.
+you can do that programmatically. For example: The observable could be connected to a button and therefore whenever that button is
+clicked, an event in a data package is emitted automatically or as the angular https service does it, it's connected to a http request.
+So when the response returns, the response is emitted as a data package and we have a lot of data sources.
+So observable is like a data source. Like user input events, http requests, triggered in code and ... . These were all async tasks.
+Because you don't know when they will happen and you don't know how long they will take. So if you execute your normal application code,
+you don't want to wait for these events or you don't want to wait for completion of a http request because if you wait, it will
+block your code. Observables are different approach for handling async tasks (other approaches are like callbacks and promises).
 
 
+The observer is actually your code. In observer you have 3 ways of handling data packages.
+You can handle normal data, you can handle errors or you can handle the completion of observable. Because these are 3 types of
+data packages that you can receive. So you can determine what should happen if you receive a new data package, what should happen
+if you receive an error, what should happen when the observable eventually completes. So these 3 were 3 different hook where different
+code is executing depending on the type of the package we receive and then observables might emit a couple of normal data packages or
+might emit an error or eventually it get might completed.
+Remember: An observable doesn't have to complete. For example there are observable which hooked up to a normal button, which never
+completes, because how would you know it completes? A user can click a button how often the user wants, right?
+But other observables like http request can eventually complete.
+
+2. Analyzing Angular Observables
+Observables are constructs which you subscribe to them to be informed about the changes in data. Because remember, observables are
+stream of data and whenever and when a new data piece is emitted, because we have been subscribe to that observables(stream of data),
+we will informed about the new data.
+EX) When we have this.route.params.subscribe((params) => {...});
+params is an observable and it's a stream of route parameters and that stream gives us a new route parameter whenever we go to
+a new page(whenever those parameters in the url changes), we get the new params therefore the code inside that callback of subscribe()
+runs.
+
+
+-->
+<!-- 3. Getting Closer to the Core of Observables:
+ -->
+
+<!-- Right now we are using some *ngIf directives to navigate around the app. So first we catch the clicked element which happened
+ on <app-header> and then we store that $event variable which has the clicked element to a prop in app.component.ts file and then
+ use *ngIfs on components that might load if user clicked on that component. But it's better to use angular router.
+ Learn: So I used <router-outlet> to mark the place where angular router should render the component which we should load it
+  depending on the path we are currently. So with <router-outlet> we got a place to load the components which are responsible for
+  routes.-->
 <app-header (featureSelected)="onNavigate($event)"></app-header>
 <div class="container">
   <div class="row">
     <div class="col-md-12">
-      <app-recipes *ngIf="loadedFeature === 'recipe'"></app-recipes>
-      <app-shopping-list *ngIf="loadedFeature === 'shopping-list'"></app-shopping-list>
+<!--      <app-recipes *ngIf="loadedFeature === 'recipe'"></app-recipes>-->
+<!--      <app-shopping-list *ngIf="loadedFeature === 'shopping-list'"></app-shopping-list>-->
+      <router-outlet></router-outlet>
     </div>
   </div>
 </div>
