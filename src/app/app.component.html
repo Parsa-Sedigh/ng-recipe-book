@@ -1505,8 +1505,416 @@ So like:
 const id = +this.route.snapshot.params['id'];
   -->
 <!-- 17. Setting up Child (Nested) Routes:
- -->
+You can see that in app.module.ts you have some duplications in routes. Because we have some routes that all of them start with
+'servers' or some other routes which start with 'users'. So it would be nice to nest them and have some child routes which all of
+them start with 'servers'.
+To do that, we add another property named children to the one of the objects of routes which has has the beginning COMMON segment
+of the routes that we want to nest them. For example in this snippet, we added children prop to the fourth route, because it's like
+a parent route for the next routes in this array. So it can have the children prop, therefore it would be a parent route of the
+next ones. Right? Now children prop takes another array of routes just like appRoutes. So we can now take those nested routes and
+add them inside that children array. After that, that common segment of route must be remover from the path prop of those
+nested routes, which are nested inside the children prop of their parent route object.
+const appRoutes: Routes = [
+  {path: '', component: HomeComponent},
+  {path: 'users', component: UsersComponent},
+  {path: 'users/:id/:name', component: UserComponent},
+  {path: 'servers', component: ServersComponent},
+  {path: 'servers/:id', component: ServerComponent},
+  {path: 'servers/:id/edit', component: EditServerComponent}
+];
 
+const appRoutes: Routes = [
+  {path: '', component: HomeComponent},
+  {path: 'users', component: UsersComponent, children: [
+    {path: 'users/:id/:name', component: UserComponent},
+  ]},
+  {path: 'servers', component: ServersComponent, children: [
+    {path: ':id', component: ServerComponent},
+    {path: ':id/edit', component: EditServerComponent}
+  ]},
+];
+
+Now the question is where the ServerComponent would be loaded? Because in your app you would get an error which says:
+Cannot find an outlet to load 'ServerComponent' in that outlet and this is because the only router outlet, the only hook in
+our code where it should load components is in our app component. So we have <router-outlet></router-outlet> in the app.component.html
+file. But that <router-outlet> is reserved for all of the components of routes which those routes are on the TOP LEVEL, not the
+routes which are nested inside top level routes. So the child routes need a separate outlet element in app.component.html file.
+Because those child components can't override the ServersComponent (parent component) and instead of overriding their parent component,
+those childes must be loaded nested into their parent component. So we go to their parent template file and then in that file,
+where you are instantiating the child components inside this file (like where you have <app-edit-server></app-edit-server>),
+we must delete those instances of child components inside the template of parent component and instead add <router-outlet>
+where you had instance of those child components. This <router-outlet> adds a new hook which will be used on all child routes of the
+route which is being loaded on the ServersComponent (parent component). So all of the children of the parent route, would be loaded
+in this <router-outlet> we placed in parent now.
+So in <router-outlet> of parent component, all of the child routes of that parent route component, will be loaded.
+So for example, in the html template of '.../users' route, instead of instantiating the <app-user> component, instead we must
+use <router-outlet> in the place we want to use the user component in the template of users component.
+-->
+<!-- Router type and it's arg is crucial for using navigate() method in .ts file for navigating programmatically to other
+ parts of app. For example when we click on a button or an anchor element , a method in .ts file of that component would be
+ called which uses navigate() method to redirect to other parts of app.
+
+ Also you learnt if you want to use a relative path in navigate() method, you need to setup the relativeTo property on the second arg
+ of navigate() method which that second arg is an object and for the value of that prop, use the reference to the currently loaded
+ route. So like: this.<name of prop of type ActivatedRoute> . With that, angular router knows to which route you want to navigate
+ relatively. So when you are in '.../servers' route and in that route, if you click on a button or link which has a code inside
+ of it's component like the below code, it would append '/edit' to the end of the current route. Therefore you would go to
+ '.../servers/route'.-->
+<!--19. Configuring the Handling of Query Parameters
+
+How we can preserve our query params, when we navigate again from a component or kinda page which ahs some query params and
+1fragments in it's url nut after going somewhere else, the query params and fragments would ne gone and then we have a new
+url.So we must do sth, because our query parameters and fragments would be gone if we navigate away from a component which in
+there we would have some query params and fragments. So we want to preserve those query parameters and fragments even after
+we navigate away from that component. In the component which would give us those query parameters or fragments and it has a
+navigate() method so if we click on the button or <a> which has the navigate() method we would go to other parts of app, to that
+navigate() method in the second arg of it which is an object, we can add a property to configure the navigation and that prop called
+queryParamsHandling . queryParamsHandling prop takes a string as the value and that string could be 'merge', to merge our
+old query params with any new query param that we might add there. But in this case we just want to preserve the query params after
+navigating to that route, so we choose 'preserve' and 'preserve' will overwrite the default behavior which will overwrite the
+default behavior which that default behavior is to simply drop the current query params after navigating to that route.
+Now if we use 'preserve' here, if we add new query parameters here, the old query parameters (after navigating to that route by
+using .navigate() method) would actually overwrite the new query params(those which would be created in the route that we navigated
+to it by using navigate() method).
+So if we use 'preserve', the current query params would be added even we navigate to the route which was specified in the navigate()
+method, therefore the new query params which would be created after we navigated to that route which is specified in the
+navigate() method of previous url, would be overwritten by the old query params. So if you want to add new query params in the
+url which we will go to that url by navigate() method and also you don't want the old query params overwrite the new ones,
+use 'merge'.
+So with this prop, we don't lose the query params or information that we had before after navigating to a new route.
+-->
+<!-- 20. Redirecting and Wildcard Routes:
+ Currently if we write something in the url after domain, which is a route that we don't cover it, we get an error.  In other words
+ we want some 404 error handling. So maybe we want to redirect the user which want to go to a page that doesn't exist, to a
+ specific page.
+ So whenever the user wants to visit a page we don't have, we want to redirect the user to a specific page.
+ Let's start with redirecting. So let's add a page-not-found component and then add it to declarations array which is in
+ app.module.ts file.
+ For redirecting the user when requests to visits a page and you don't want to show that page(maybe it's not a page you covered
+ or ...), don't add the component prop to that route you don't want users to be able to see it and instead add redirectTo
+ prop when you're definign the routes in app.module.ts file.
+ So if you don't want to specify a component to load for a route(maybe that page is not a page you covered or that route the
+ user entered its' route is bullshit!) and you want to redirect the user when he enters that not covered url, instead of
+ using component prop you can use redirectTo prop.
+
+ So the component of route which that route is the place that we redirected user to that route, is an alternative component.
+ Also for catching all the routes which those routes aren't covered by your app is to use double ** for path prop. So in that
+ object which '**' is the path, we can redirect user to a not found component or page.
+ The order is super important in this case. Because you must make sure that very generic routes are the last ones in your
+ array of routes. Because your routes get parsed from top to bottom. So if for example an extremely route was at the beginning
+ like {path: '**', redirectTo: '/not-found'} , you would always get redirected in this case. Because everything you enter in the
+ url would catched by this route and this route would redirect you to 'not-found' route and it's component would shown to you.
+ Learn: So the more generic the route, the more bottom in the routes array.
+
+ Learn: It's also a must to use pathMatch: 'full' prop in object of a route which has a redirectTo prop. The details are
+  in course note.
+
+ EX)
+ const appRoutes: Routes = [
+    {path: 'not-found', component: PageNotFoundComponent},
+    {path: '**', redirectTo: '/not-found'},
+ ];
+-->
+<!-- 22. Outsourcing the Route Configuration:
+ Typically if you have more than 2 or 3 routes in your app, you don't add them directly in app.module.ts file. Instead,
+ you create a new file which is application-wide, so it must be created in app folder and it's name is app-routing.module.ts .
+ So now we have 2 modules.
+ Basically you can build your angular app from multiple modules.
+ So now cut the appRoutes const which is an array of all of our rotes and paste them in this new file. Also you must import
+ the .ts files of the components which are used in that array of routes.
+ Remember that you don't need the declarations array in @NgModules of this class in this file, because those components are
+ already declared in app.module.ts file. But also remember to add AppRoutingModule to the app.module.ts module.
+ Also it's good to remove routerModule().forRoot(appRoutes) from imports array and it's import expression from top that file which
+ is in app.module.ts file because we don't need it anymore in app.module but in app-routing.module.ts file.
+ Now you must import routerModule in app-routing.module.ts file. Now we must configure @NgModule() .
+ To do that, again (which we had this imports array in app.module.ts file too)  add imports array in that object we passed
+ to @NgModule decorator and in imports array, we add routerModule.forRoot() and pass the variable name of routes array to
+ forRoot() method. But this isn't enough. Because we use app-routing.module.ts file for outsourcing our routes.
+ So we need to add our app-routing.module.ts file back to app.module.ts file and for doing this, we need to add the exports array
+ as a property in object we passed to @NgModule() in app-routing.module.ts file.
+ exports array simply tells angular: "Hey, from this module, If i were to add this module(the module that exports array is currently
+ in it) to imports of another module, what should be accessible to the module that imports this module which I'm currently in it. "
+ And the one thing that we want to make it accessible from the module that imports this module is our routerModule. But in here
+ you don't call forRoot() on routerModule, because we call it earlier. So in the first step, we configured routerModule and
+ configured means you added your routes to it's () of forRoot() , now in the exports array, we just export this configured
+ routerModule. Therefore in app.module.ts, we can now import our own module which in this case is app-routing.module.ts and it's
+ class.
+ So in imports array of app.module.ts , add appRoutingModule and also it's address in top of app.module.ts file. With this, we have
+ a leaner app.module.ts file and also our routing functionality is outsourced in a separate module is app-routing.module.ts file.
+
+ const appRoutes = [
+    ...
+ ];
+ @NgModule({
+  ...
+ })
+ export class AppRoutingModule {
+
+ }
+ -->
+<!-- Guards:
+ Guards are functionality, logic or code which is executed before a route is loaded or once you want to LEAVE a route.
+  For example: Let's say you want to give access to user for using your server component or the edit-server component if
+  a user is logged in. Manually checking if a user is logged in, in OnInit() is not good because you must add that logic to all
+  of those components. So we must use a feature in angular that runs some code before that component we want to check sth before
+  it's is loaded.
+
+  24. Protecting Routes with canActivate:
+  So let's create auth-guard.service.ts file.We called it auth-guard because the feature of @angular/router is called guards.
+  Also I called the class of this file AuthGuard and not AuthGuardService because we will use this service only as a guard,
+  we can leave it as AuthGuard without Service added to end of it and we must implement CanActivate interface and this interface
+  forces you to have a canActivate() method in your class and this method will receive 2 args with types of route arg(I named it
+  route) which is type of ActivatedRouteSnapshot and state of the router which I named it router and it's type is
+  RouterStateSnapshot .
+  Where are we getting these args from?
+  We'll soon define that angular should execute the code in canActivate method before the route is loaded. So it will give us the
+  data.
+  Important:canActivate() also returns something. It either returns an observable which is type of Observable and the
+   returned observable would wrap a boolean value.So it return type would be Observable<boolean> . This means IN THE END,
+   this observable resolves to true or false. Or this method returns a promise of type Promise which in the end would be RESOLVED(we
+   don't specify the reject value) to a boolean value. Or this method returns just a boolean.
+   So canActivate() can be executed both asyncrounosly which therefore would return an observable or a promise or synchronously
+   which returns a boolean. Why it can be executed async and sync?
+   Because you MIGHT have some guards which execute some code and that code runs completely on the client therefore it runs
+   synchronously. Or you might have some code which takes a couple of seconds to finish, because maybe you use a timeout in there
+   or you reach out to a server.  Therefore that code runs asyncrounosly and both is possible with canActivate() .
+
+   Now let's assume that we have a fake service which is called auth.service.ts which might reach out to service and allows us to
+   login or logout and also can check our current authentication state and in that service we're tracking the state with loggedIn
+   prop.
+   We need to use @Injectable for auth-guard.service.ts to be able to use another service in auth-guard.service.ts service or in other
+   words to be able to inject another service to this service which we are using @Injectable() on it and then we can inject that
+   external service by creating an arg in () of constructor of the service which has @Injectable() and also it's better to store
+   that arg to a prop, so we can use that prop in whole class and not in just that method (which in this case is constructor) which
+   gets that arg.So by storing it on a prop of class, we can use that arg, in it's class and objects.
+
+   auth-guard.service.ts:
+
+   import {
+      canActivate,
+      ActivatedRouteSnapshot,
+      RouterStateSnapshot
+   } from '@angular/router';
+   import{Observable} from 'rxjs/Observable';
+
+   @Injectable()
+   export class AuthGuard implements CanActivate {
+      constructor(private authService: AuthService, private router: Router) {}
+
+      canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable<boolean> | Promise<boolean> | boolean
+      {
+          // Let's check if user is logged in or not?
+          /* Learn: Also I use return here, because if you return sth inside of a promise, that sth we returned would gives us
+              back another promise. (Even if that sth which you're returning inside of a promise, is just true or just a number! It
+              would return a promise which resolves with that true or that number). In this code that promise which we're returning
+              sth from it, is this.authService.isAuthenticated() which returns a promise.*/
+         return this.authService.isAuthenticated()
+                          .then((authenticated: boolean) => {
+                             if (authenticated) {
+                                return true;
+                             } else {
+                                /* In this case we don't want to allow user to access to the route that he wanted to go, in the
+                                 beginning. So we can navigate away to force the user to go somewhere else. So let's first include
+                                 angular Router. Because we need it, here. So first let's create an arg for getting that router
+                                 with it's type. So let's specify for going back to root page.
+                                 So with this navigating, we don't let user to go to that original route.*/
+                                 this.router.navigate('/');
+
+                                 /* After navigating away, you may also want to write return false; so with this you will prevent
+                                  the original navigation from happening ANYWAYS!*/
+                                  return false;
+                             }
+                          });
+      }
+   }
+
+   auth.service.ts:
+   export class AuthService {
+      loggedIn = false;
+
+      //This method checks the state of we're authenticated or not (state)? and in this method maybe we reach out to a server.
+      isAuthenticated () {
+      //Learn: Promise() class always takes take a function as the arg with resolve and reject arg methods that we can execute.
+        const promise = new Promise((resolve, reject) => {
+        //Let's simulate reaching to a server:
+        /*Learn: In setTimeOut() we first wait the time that we specified in second arg and then execute the function which is the
+           first arg of this method */
+
+          setTimeOut(() => {
+            resolve(this.loggedIn);
+          }, 800);
+        });
+
+        return promise;
+      }
+
+      login () {
+         loggedIn = true;
+         ...
+      }
+
+      logout () {
+      ...
+         loggedIn = false;
+      }
+      ...
+   }
+
+
+Now we must go to app-routing.module.ts file and now we want to define which routes should be protected by this guard and we can
+do it by going to the object of that route in appRoutes array and add canActivate property to that object. (If a route has nested
+child routes those child routes would be also protected by that route).
+Now canActivate takes an array of all of the guards that you want to apply to this route and it will automatically get applied
+to all of the child routes.
+
+So now '/servers' and it's children will accessible if the canActivate method in auth-guard service returns true in the end which
+will only happen if in the auth service loggedIn is true. But right now it would always false. Because we don't change it.
+    -->
+<!-- 25. Protecting Child (Nested) Routes with canActivateChild:
+ The prior service is applying for WHOLE '/servers' path. Now we can grab it from path defenition and instead give it to each of
+ it's children so with this, only it;s childes are protected and not '/servers' itself.
+
+ const appRoutes: Routes = [
+    {path: 'servers', component: ServersComponent, children: [
+        {path: ':id', canActivate: [AuthGuard], component: ServerComponent},
+        {path: ':id/edit', canActivate: [AuthGuard], component: EditServerComponent},
+    ]},
+ ];
+
+ BUT this is not the easiest way. Because we're adding that canActivate: [AuthGuard], to every child.
+ So there is another guard we can use. It's another interface called canActivateChild. So first we must implement this interface
+ in the AuthGuard service. This interface wants you to provide a canActivateChild() method in the class that you implement this
+ interface and the args and the return type of it's method is exact as canActivate() method.
+ Now inside this method you can call canActivate() method and pass it those 2 args that you get from canActivateChild() .
+
+ So now since we added CanActivateChild interface, we can now use a different hook in the routes definition. So instead of
+ only using canActivate prop on parent route and then the children get that guard, instead , we can use canActivateChild on the
+ parent route which also takes an array of services which act as guards and those services are definitely implementing the
+ right interfaces. So now we ONLY use canActivateChild prop on parent route and not anything else on parent or children,
+ so now if we go to parent route, we can and it won't redirect us(because it hasn't redirectTo prop) and also it's children
+ don't have anything else. So if we go to children routes of this route, they will redirect us.
+ -->
+<!-- 27. Controlling Navigation with canDeactivate:
+ Let's control users to whether they are allowed to leave a router or not? For example when user did some changes on a page
+ and he wants to go to another page or route or go back, we can ask user if he really wants to leave this route or not? So keeping
+ users from accidently navigating away.
+ So in the component you want to to this, let's create a prop named changesSaved and set it to false initially. So when the
+ user clicks on update button, onUpdateServer() must run and must save the changes to server. Now changes were saved on server,
+ we set changesSaved prop to true and after the changes were saved in onUpdateServer() method, we want to navigate away.
+ So let's add Router in () of constructor and store it in a prop.
+ Now we somehow need to execute the code which asks the user if he really wants to navigate away without saving the changes on
+ server, in that edit-server.component.ts file. Because we need access to changesSaved() method, which informs us that update button
+ was clicked or not? Learn: However a guard always need to be a service.
+ Because we need to provide it just like we provided the AuthGuard service. So somehow this doesn't fit. Because we need to
+ access the code in our component and also must have a service and that sounds like a complicated setup. But it's simple.
+ Let's create a file named can-deactivate-guard.service.ts inside edit-server folder.
+ Learn: An interface simply is a contract which can be imported by some other classes which FORCES those classes that imported
+  this interface, to provide some logic.
+
+ CanComponentDeactivate interface requires one thing from the component that implement this interface and that one thing is
+ canDeactivate() method.
+ An interface won't contain the actual logic and it would only contain information about how that method in the components(classes)
+ which implement this interface, should looks like.
+ So in this interface we are saying that the classes which implements this interface MUST have a method called canDeactivate which
+ shouldn't receive any arg (() means no args) and this method in the end should return an observable which therefore we need to
+ import it at top of the file and that observable would resolve to a boolean and ... .
+
+ canDeactivate is an interface provided by angular and it's a generic type and it will wrap our own interface
+ So: <our interface>
+ So it will wrap an interface which forces some components or some classes which use(implement) this interface, to implement
+ canDeactivate() method. So this is the setup which makes sure that in future we can easily connect a component to our
+ canDeactivateGuard.
+ Now this canDeactivateGuard needs to has a canDeactivate() method and this method will be called by angular router once the user
+ tries to leave the route that he is currently in it.Therefore, the canDeactivate() method will receive the component on which the
+ user is currently on that component as an arg which must be of type canComponentDeactivate which means it needs to be a component
+ which has implemented our interface. Therefore that component has canDeactivate() method on it.
+ nextState arg is where do you want to go? Because remember, this will be called at the end, when we want to leave a route.
+ nextState is an optional arg so it gets ? before :<type> . Then we call canDeactivate() method on the component which we're
+ currently on it. This is why we need to implement canComponentDeactivated on that component. This is why we created that
+ interface. Because now, the angular router can execute canDeactivate() method in our service and can rely on the fact that
+ the component we're currently on has the canDeactivate() method too. Because this is what we will actually implement the logic
+ which is checking whether we're allowed to leave the current component we're on it or not. Because we need this connection
+ between our guard and the component. So this is why we can call canDeactivate() method there. Now we can go to app-routing.module.ts
+ and on path: ':id/edit' we want add this new guard, so: canDeactivate: [CanDeactivateGuard]
+ Now angular will call this guard, whenever we want to leave that path. Also you need to go to app.module.ts and add our guard
+ to providers array. Also you must implement the CanDeactivateGuard class in the component which is on ':id/edit' path.
+ So we must go to EditServerComponent and implement CanDeactivateGuard. Why we did this? Because I told CanDeactivateGuard
+ will in the end call canDeactivate() method on our component. Now we know that in CanDeactivateGuard we are implementing the
+ canDeactivate() method of CanComponentDeactivate interface.
+ So because in CanDeactivateGuard class we are using canDeactivate() method, so we need to implement that method in other classes
+ which are in the path which that guard is also used for that path. Because that guard class (CanDeactivateGuard) will need
+ the component of that route to use canDeactivate() method on that component.
+ Therefore in the edit-server-component file we need to add canDeactivate() method and we know what this method will return,
+ because we defined the return type in the interface. Now we must write the actual logic of this method and in second if statement
+ we check if the value of serverStatus or other values or as same as before or not(actually checking they have been changed or not?)
+
+
+ export interface CanComponentDeactivate {
+    canDeactivate: () => Observable<boolean> | Promise<boolean> | boolean;
+ }
+
+ export class CanDeactivateGuard implements canDeactivate<CanComponentDeactivate> {
+    canDeactivate(component: CanComponentDeactivate, currentRoute: ActivatedRouteSnapshot, currentState: RouterStateSnapshot,
+                  nextState?: RouterStateSnapshot): Observable<boolean> | Promise<boolean> | boolean
+                  {
+                      return component.canDeactivate();
+                  };
+ }
+ -->
+<!-- 28. Passing Static Data to a Route:
+ How to get some data either static data or dynamic data, once a route is loaded. Now you might say: "We learned how to get
+ data and how to get parameters or query params and ... out of the url! and use them". NO! This is not like them!
+ I mean that some of your routes depend on data they receive, either get data statically, which means each time the routes
+ loaded, they will receive those data, or dynamically.
+ For example we create an error component page, which we use it for all kinds of errors and in the template of this component,
+ maybe we have some string interpolation which shows the error message, therefore we must create a prop for that string
+ interpolation (with exact names). But where we get this message? Now, we could reach this page and it's component through
+ different hooks.
+ But we also know that there's a specific error for each error page. So we can go to app.module.ts file and then go to
+ the object for 'not-found' route and add data property(which we can pass static data) then add the key-value pairs you want
+ to use in that component of route.r
+ Now you might say: "Why we didn't define that message in the .ts file of component itself? Instead of defining them in app.module.ts
+ file? Because we might reuse this error page.So maybe we would have another route which that route also would reach this component
+ (nested routes or ...) where in that route we want to display error or we have a different logic in our app, which might render
+ that page.
+ So again it might be reusable, but for each error, there's a specific data for a specific message.
+
+ Now we want to retreive that error, whenever we load our error component and for this task, like params and ... , we need
+ ActivatedRoute type and it's arg in constructor and store it in a prop of .ts file of that component and then in ngOnInit()
+ we must ge that message prop which is available when we enter this route, by using route.snapshot.data['message']
+ and if that message prop would possibly change, while you're still on that page and component, we must use: this.route.data.subscribe()
+ So because we passed the data prop which is an object and in this case has message prop, we can access that message rop which
+ is available on that route, by using this.route.snapshot.data['message']
+
+29. Resolving Dynamic Data with the resolve Guard:
+Now let's say we have some dynamic data which we want to fetch them before a route can be displayed or can be rendered. So we need
+a resolver and this resolver is also a service which will allow us to run some code BEFORE a route is rendered. The difference
+between CanActivate and this resolver is that resolver won't decide whether this route should be rendered or not or in other words
+it won't decide whether the component in that route should be rendered or not?
+So the resolver will always render the component in the end, but it will do some pre-loading or in other words it would fetch some
+data that the component will need in the future. The alternative of this approach, is to render the component of that route instantly
+(instead of pre-loading and fetching some stuff before show that component) and in ngOnInit() method of that component (page of that
+route) we can fetch the data and display some spinner whilst you're fetching that data. But if you want to load it before actually
+displaying the route:
+You must create a file in server folder because that file is a resolver for servers.
+
+Remember: Resolve is a generic type and it should wrap whichever item or data field you will get or in this case, fetch there.
+So in <> of Resolve, we must specify the type of thing that when resolve() method finishes, it would be return that thing for us.
+So in this case, when resolve method finishes it's work after some time, it would bring us a server which would be an object with some
+props that we specified the type of those props.So <> for Resolve is type definition of the thing which resolve WILL give us in the
+end(the type of thing it would resolved in the end).
+Now the resolve interface which we implemented it, wants from us to implement resolve() method in our class which implements
+Resolve interface and resolve() method takes 2 args. First one is the route with type of ActivatedRouteSnapshot and the secodn one
+is state. So these 2 information pieces were the things that resolve() method gets from angular.
+Learn: We defined an interface named Server. So we can replace the type definitions of a server object with Server interface.
+ So instead of saying: <{id: number, name: string, status: string} we can say <Server>> . So that Server interface is a shortcut
+ of that long type definition. So after implementing that interface in the class which it's method would return that long exact
+ type of interface, we can replace the name of that interface with those long type definitions.
+
+ In return statement of resolve in server-resolver.service.ts file, we are getting the route in that method. The route is only a
+ snapshot, so the route which is a snapshot won't be updated if we were on that route and reload it with other params. But in this
+ case it doesn't matter. Because the service that
+  -->
 
 
 <app-header (featureSelected)="onNavigate($event)"></app-header>
