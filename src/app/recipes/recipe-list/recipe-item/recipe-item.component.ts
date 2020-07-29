@@ -11,14 +11,18 @@ export class RecipeItemComponent implements OnInit {
   /* @Input() allows us to bind this property from outside */
   @Input() recipe;
   // @Output() recipeSelected = new EventEmitter<void>();
+
+  /* This index prop is coming from recipe-list.component.html file. */
+  @Input() index: number;
+
   constructor(private recipeService: RecipeService) { }
 
   ngOnInit(): void {
   }
 
-  onSelected() {
-    // this.recipeSelected.emit(event);
-    this.recipeService.recipeSelected.emit(this.recipe);
-  }
+  // onSelected() {
+  //   // this.recipeSelected.emit(event);
+  //   this.recipeService.recipeSelected.emit(this.recipe);
+  // }
 
 }

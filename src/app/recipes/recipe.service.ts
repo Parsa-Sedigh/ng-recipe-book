@@ -128,4 +128,13 @@ export class RecipeService {
   addIngredientsToShoppingList (ingredients: Ingredient[]) {
     this.slService.addIngredients(ingredients);
   }
+
+  /* I created this method, so other components or services or ... , can get the recipes which are stored in this file. */
+  getRecipe (index: number) {
+    /* We called slice() here because by using this method, we would get a copy of the array.Though it won't be a deep copy,
+    * so the object still are the same anyways. So you can also directly return the object like the code.
+    * You could of course also create a had copy of the object with Object.assign() . */
+    // return this.recipes.slice()[index];
+    return this.recipes[index];
+  }
 }

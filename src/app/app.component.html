@@ -1999,6 +1999,18 @@ Learn: We defined an interface named Server. So we can replace the type definiti
 
  Prettier routes using the html history mode are normal slash routes without #.
  -->
+<!-- In routerLinkActive directive, we define the class we want to CONDITIONALLY attach to the element that this directive sits on it,
+ whenever the link on that element or the element nested inside of it gets active.
+
+ Also when using <a> don't use href attr on them, because it would send request to server and therefore it would reload the app.
+ Instead use [routerLink] directive.-->
+<!-- For setting up dynamic links non programmatically, we must use [routerLink] with [] to really configure those links.-->
+<!-- You can't use routerLink on <button> elements. So you can add a click listener on those elements and then call a method after
+ user clicks on those elements and in that method you can use navigate() method to go to other routes. Also for using navigate()
+ you must include Router to your .ts file.-->
+<!-- Important: When you have a component that would have an id or some other information which would be created for that
+      component in the beginning nad you will need that info later in your methods or props, you can get that information
+      which is about that component in ngOnInit() of that component.-->
 
 <!-- Observables
 An observable is like a data source. Now in our angular project, an observable is basically just an object which we import from
@@ -2033,11 +2045,82 @@ EX) When we have this.route.params.subscribe((params) => {...});
 params is an observable and it's a stream of route parameters and that stream gives us a new route parameter whenever we go to
 a new page(whenever those parameters in the url changes), we get the new params therefore the code inside that callback of subscribe()
 runs.
-
-
 -->
 <!-- 3. Getting Closer to the Core of Observables:
+For building your own observables you must import sth from rxjs package. But when you're working with params observables you
+don't need to do this import for that. But if we want to create a new observable, we need certain feature from rxjs package.
+To be precise, the rxjs package gives us different ways of creating a new observable and one of the easiest way of doing this is
+to use interval function and we can import interval from rxjs package and you can call interval() and then pass a number to it.
+That is a bit like setInterval() where it will fire an event every x(the number in () of setInterval()) milliseconds.
+So here it is also like setInterval. So when you pass 1000 to interval() , every 1 second it would emit a new event. The
+result of interval(1000) would be an observable therefore we can subscribe() to that function which gives us observable.
+
+The first arg you can pass to subscribe() is an anonymous function, that function is a handler for all of the data values which
+emitted from interval() and the emitted values from interval() is an incremental number. So we can get that number by providing
+an arg for the anonymous function in first arg of subscribe().
+So when we have interval(1000) , it will emit a new incremented number every 1000 milliseconds. So we can get that emitted number
+by providing an arg in () of function of first arg of subscribe() . Which in this case we named that arg, count.
+
+Now in developers console, you should see an incrementing value which would log to the console every 1 second and it would log it
+to console till end of earth!
+This is not an observable which we built from ground up but it's close to that. Now, we write the code of this interval() observable
+in the file of a component, right? For example in .ts file of componentA. But after navigating to componentA, if you now go to
+another component, you can see still we're logging that incrementing number to the console! Even when we're not at the component
+which has the code of that observable!!!
+Now if you navigated away from the component which has an observable which emits values and AGAIN navigate back to that component,
+a new observable which is exact as that old observable will start to emitting values and that old observable is also keeping
+it's work and is still emitting it's values. So now we have 2 observables that are working and again if you navigate away from
+that component and then get back to that component, 3 observables would working and ...
+Learn: Observables don't neccessirly stop emitting values just because you're not interested in them anymore(so in this case
+ when we navigate away from the component which has the code that emit values from an observable, still we get the values of
+ that observable)! But there are certain observables which emit a value ONCE and they're done. For example an HTTP request where
+ you get back the response.
+ To stop an observable from emitting values and therefore to prevent memory leaks, you should unsubscribe from any observable
+ which you're not interested to it's values anymore. To do this, we should store our subscriptions. So if you subscribed to an
+ observable in a component, you should store that subscription inside a prop of class of component and the type of that prop
+ which stores a subscription to observable would be Subscription and this Subscription type must be imported from 'rxjs' package.
+ When we use .subscribe() on an observable, that method returns a subscription. So when we subscribe, we can store that
+ subscription in the property which we stored our subscription and is type of subscription. But notice, here we are not storing
+ the observable in that subscription prop, because we instantly subscribe() to that observable. Therefore we store whatever
+ subscribe() returns and we know subscribe() returns a subscription.
+ Now the idea behind storing the subscription into a prop simply is that we now can implement OnDestroy there and by
+ implementing OnDestroy on the class of a component, it forces us to add the ngOnDestroy() lifecycle hook and inside of that
+ we can use that prop which we stored the subscription to that observable and call unsubscribe() method on that prop. This means
+ whenever we leave that component, we clear that subscription and therefore we prevent memory leaks because we're not keeping the
+ old subscription anymore.
+ So now if you navigate away from that component, the observable won't emit new values and if you get back to that component
+ again the old observable is dead because we unsubscribed that old observable and a new observable would start to working.
+
+ Remember: The observables which are provided by angular, like params, all of them are managed by angular and therefore you don't
+ need to unsubscribe from them manually.
+ So we learnt that interval() is kind of a utility function which gives us a predefined observable that fires every x seconds.
+
+EX)
+interval(1000).subscribe((count) => {
+  console.log(count);
+});
+
+ngOnDestroy () {
+  this.<property which we stored our subscription to that observable we want to unsubscribe from it>.unsubscribe();
+}
  -->
+<!-- 4. Building a Custom Observable:
+To create a new observable, we can import the type Observable from 'rxjs'.
+The create() method on Observable takes a function which that function will get an argument automatically. RxJS will pass that
+arg automatically for us to that function and that arg is called observer.
+Learn: The observer, in the end is the part that is interested in being informed about new data or about errors or about
+ observable being completed. Now our job in the anonymous function of create() is to tell observer about the new data which
+ observable emits or about errors or about the observable being completed and in there(in anonymous function for create()),
+ we're not responsible for listening because the observer is the listener. In that anonymous function, we get the listening part
+ as an arg and we need to tell it once we're done(for example once we have new data).
+
+ When we're saying observer.next() in anonymous function of create() method, we are emitting a new value by calling that.
+
+const customIntervalObservable = Observable.create((observer) => {
+  setInterval(() => {
+    Observer.next();
+  }, 1000);
+}); -->
 
 <!-- Right now we are using some *ngIf directives to navigate around the app. So first we catch the clicked element which happened
  on <app-header> and then we store that $event variable which has the clicked element to a prop in app.component.ts file and then
@@ -2045,7 +2128,8 @@ runs.
  Learn: So I used <router-outlet> to mark the place where angular router should render the component which we should load it
   depending on the path we are currently. So with <router-outlet> we got a place to load the components which are responsible for
   routes.-->
-<app-header (featureSelected)="onNavigate($event)"></app-header>
+<!--<app-header (featureSelected)="onNavigate($event)"></app-header>-->
+<app-header></app-header>
 <div class="container">
   <div class="row">
     <div class="col-md-12">

@@ -13,7 +13,10 @@
   class. ) , don't propagate up. So we can't listen to the event of a child of a child and ... .But we can listen to event which is
   coming from child and not child of child and ... .-->
 
-<a href="#" class="list-group-item clearfix" (click)="onSelected()">
+<!-- I commented this out, because this isn't how we pass the selected recipe to another component anymore.
+<a style="cursor: pointer;" class="list-group-item clearfix" (click)="onSelected()">
+In this case [routerLink] has a relative path. Because we want to append this route of link to current route.-->
+<a routerLinkActive="active" [routerLink]="[index]" style="cursor: pointer;" class="list-group-item clearfix">
     <div class="pull-left">
       <h4 class="list-group-item-heading">{{ recipe.name }}</h4>
       <p class="list-group-item-text">{{ recipe.description }}</p>

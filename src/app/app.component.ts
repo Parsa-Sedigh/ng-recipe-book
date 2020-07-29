@@ -11,8 +11,8 @@ export class AppComponent {
   loadedFeature = 'recipe';
 
   /* We need to make sure that we store this feature arg. So we store it in loadedFeature which is a property of this class. */
-  onNavigate (feature: string) {
-    this.loadedFeature = feature;
-
-  }
+  // onNavigate (feature: string) {
+  //   this.loadedFeature = feature;
+  //
+  // }
 }

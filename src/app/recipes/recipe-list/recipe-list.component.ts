@@ -1,6 +1,7 @@
 import { Component, OnInit, Output, EventEmitter } from '@angular/core';
 import { Recipe } from '../recipe.model';
 import {RecipeService} from "../recipe.service";
+import {ActivatedRoute, Router} from "@angular/router";
 
 /* recipes: Recipe[] = ...; means the recipes would be an array of Recipe objects.
 When you are saying: new Recipe() , actually you're calling the constructor of that class. So in the (), we need to pass
@@ -28,7 +29,7 @@ export class RecipeListComponent implements OnInit {
   * this component. */
   // @Output() recipeWasSelected = new EventEmitter<Recipe>();
 
-  constructor(private recipeService: RecipeService) { }
+  constructor(private recipeService: RecipeService, private router: Router, private route: ActivatedRoute) { }
 
   ngOnInit(): void {
     this.recipes = this.recipeService.getRecipes();
@@ -37,5 +38,13 @@ export class RecipeListComponent implements OnInit {
   // onRecipeSelected (recipe: Recipe) {
   //   this.recipeWasSelected.emit(recipe);
   // }
+
+  onNewRecipe () {
+    /* In this component, we're currently in '.../recipes' route. So we can use a relative route for navigating.
+    * Learn: Now for using relative path in the navigate method, we also need to inform the router about our current route.
+    *  So we must include ActivatedRoute to () of constructor and store it in a prop and then add the second arg of navigate method
+    *  and use relativeTo prop and use Route arg for value of relativeTo prop.*/
+    this.router.navigate(['new'], {relativeTo: this.route});
+  }
 
 }
