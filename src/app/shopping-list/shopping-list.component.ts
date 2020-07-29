@@ -1,5 +1,5 @@
-import { Component, OnInit, ViewEncapsulation } from '@angular/core';
-
+import { Component, OnInit, ViewEncapsulation, OnDestroy } from '@angular/core';
+import {Subscription} from "rxjs";
 /* Just like Recipe, we're going to use ingredients a lot in our app. So we need to create a model for ingredients.
 * Now where we must place the ingredient model file? We stored the Recipe model in recipes folder, because that model belongs
 * to that folder, but where does the Ingredient model belong to? For this, we can create the shared folder in the app folder.
@@ -12,14 +12,16 @@ import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import {Ingredient} from '../shared/ingredient.model';
 import {ShoppingListService} from "./shopping-list.service";
 
+
 @Component({
   selector: 'app-shopping-list',
   templateUrl: './shopping-list.component.html',
   styleUrls: ['./shopping-list.component.css'],
   // encapsulation: ViewEncapsulation.None,
 })
-export class ShoppingListComponent implements OnInit {
+export class ShoppingListComponent implements OnInit, OnDestroy {
   ingredients: Ingredient[];
+  igChangeSub: Subscription;
 
   constructor(private slService: ShoppingListService) { }
 
@@ -46,9 +48,13 @@ export class ShoppingListComponent implements OnInit {
     * initializations in ngOnInit() method. */
 
     this.ingredients = this.slService.getIngredients();
-    this.slService.ingredientsChanged.subscribe((ingredients) => {
+    this.igChangeSub = this.slService.ingredientsChanged.subscribe((ingredients) => {
       this.ingredients = ingredients;
     });
+  }
+
+  ngOnDestroy() {
+    this.igChangeSub.unsubscribe();
   }
 
   /* This method shouldn't live here and it must be in shopping-list service. Because it adds some data to our data which

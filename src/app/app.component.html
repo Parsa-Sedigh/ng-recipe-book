@@ -2114,13 +2114,185 @@ Learn: The observer, in the end is the part that is interested in being informed
  we're not responsible for listening because the observer is the listener. In that anonymous function, we get the listening part
  as an arg and we need to tell it once we're done(for example once we have new data).
 
+ Learn: In subscribe() we pass a function which accepts the data we're emitting from observable.
+
  When we're saying observer.next() in anonymous function of create() method, we are emitting a new value by calling that.
+ Or observer.complete() in function of create() is to inform observer that you're done.
+
+ When you create a subscription to an observable which that observable is created by using create method, you must add the
+ result of subscription into a property and then you must use unsubscribe() on that property. So it means you unsubscribed
+ from that subscription.So with this, if you navigate away from the component which has this custom observable, that observable
+ would be die and won't emit new values and if we back to that component again, a new observable would be start to working.
 
 const customIntervalObservable = Observable.create((observer) => {
+
+  //Emitting new data from this observable
+  let count = 0;
   setInterval(() => {
-    Observer.next();
+    Observer.next(count);
+
+    if (count === 2) {
+      Observer.complete();
+    }
+
+    //Fake error handling
+    if (count > 3) {
+    //Throw an error
+      Observer.error(new Error('Count is greater 3!'));
+    }
+
+    count++;
   }, 1000);
+
+  this.firstObsSubscription = customIntervalObservable.subscribe();
+
+  ngOnDestroy() {
+    this.firstObsSubscription.unsubscribe();
+  }
 }); -->
+<!-- 5. Errors & Completion:
+The most crucial thing that observables do is emitting new data, so when you subscribe() to an observables, you must pass the
+first arg of subscribe() where you're in getting the data from observable.
+When you have HTTP request with observables, error handling is crucial.
+
+Whenever an observable throws an error, it cancels, it's done, it dies and won't emit new values and therefore in that case
+you don't need to unsubscribe from that observable. You still can unsubscribe if you navigate away from that component.
+So throwing an error actually cancels the observable and lets it die.
+
+Learn: The second arg of subscribe() method is a function that gets called when an error occurs and we get the error by
+ providing an arg for that function.
+
+When you call complete() on the observable, observable will really come to halt. So whenever an observable is complete it's
+really done, there are no values emitted after an observable is completed.
+
+Learn: If you want to react to completion of an observable you can add the third arg to subscribe() method and that third arg
+ is the completion handler function. It's a function that gets no arguments, because completing doesn't pass any arguments.
+ Also remember: You don't need to unsubscribe of the observable, if your observable completes. But you might don't know that,
+ so you can unsubscribe it in ngOnDestroy() .
+
+Important: When an observable throws an error or gets canceled due to an error, the complete function would never called.
+ The complete arg, won't called if the observable gets an error. So if we get an error, the observable would never completed.
+ Because it was canceled and died.
+
+ Whenever you subscribe() to an observable and then you set up your different handler functions as arguments of subscribe(),
+ in the end, RxJS would merge all of those handler functions altogether into one object and passes that object which is the
+ observer, to observable and inside of observable, it will then interact with observer and let the observer know about new data
+ that he(observable!) was emitted and also about errors and ... .
+
+ So generally, observables wrap some event source(in our custom observable, that event source was setInterval() function and in
+ other cases, it might be an ajax request or a click listener or ... ) and they give you data or might errors or complete event and
+ in most cases you use .subscribe() on observable and pass some functions to that subscribe() as args to deal with those data or
+ errors or completion.
+ -->
+<!-- 7. Understanding Operators:
+ Sometimes you don't need the raw data that comes from observable and you want to transform it or filter out certain data points
+  and of course you can do all of that inside your subscription or in other words in functions that you pass to subscribe() ,
+  but there's a better way. You can set things up, which with that setup, data points first reach those operators instead of
+  subscribe() and then those operators do something with the data and then subscribe to result of those operators.
+  So we manipulate the data we got from observable in earlier places than those handler functions and those places are operators.
+  You can use those operators on the observables like customIntervalObservable which we were created it and by calling a method
+  called pipe() .
+  Every observable has pipe() method available on it.The pipe() method is built into rxjs . Now you can import operators but not
+  from 'rxjs' package, instead from 'rxjs/operators' . map() gets an anonymous function as argument and that function and that
+  function takes the data that if you weren't use operators, that data would go directly to the first anonymous functions inside
+  subscribe() and that data is the current data of your observable which is being emitted by observable.
+  In map() we have to return the data we got from observable.
+  Now if you see the results of logging the data you are getting from map() operator in subscribe() first callback, you notice
+  that the data is not changed! The reason is that yes the data is applied and changed by map() but still we're subscribing to
+  old observable and also and the map() inside of pipe(), isn't changing the data that observable emitting, but instead it is
+  changing the data we get AFTER the pipe() . Important: So we must subscribe() on the pipe() of observable.
+  So instead of this:
+  customIntervalObservable.pipe(map((data) => {
+    return `round ${data + 1}`;
+  }));
+
+  this.firstObsSubscription = customIntervalObservable.subscribe(
+  (data) => {console.log(data);},
+  (error) => {
+    console.log(error);
+    alert(error.message);
+  },
+  () => {console.log('Completed!');}
+  );
+
+  We must write this:
+  customIntervalObservable
+  .pipe(
+  filter((data) => {
+    return data > 0;
+  }),
+  map((data) => {
+    return `round ${data + 1}`;
+  }),
+  )
+  .subscribe(
+      (data) => {console.log(data);},
+      (error) => {
+        console.log(error);
+        alert(error.message);
+      },
+      () => {console.log('Completed!');}
+  );
+
+ pipe() method takes unlimited args which each arg is an operator and those operators will execute one after another and do
+ different kinds of stuff on the current data which was emitted by the observable.
+
+ Learn: In filter() we must return either true or false, which with this , we decide that data point will continue that chain
+  of methods or not.
+
+ 8. Subjects:
+ Instead of EventEmitter<>() we can use a Subject<>() .
+ A Subject<>() is a spacial kind of observable. So you can subscribe() to a subject which is an object like an observable but
+ it's more active because you can call next() on it from outside of subject. Remember: In observables context, you could call
+ next() but you must do this from INSIDE of that observable.
+ So subjects are active observables which are perfect for using them as event emitters. So if we don't have a passive event source like
+ an http request or DOM events, but if we have sth that needs to actively triggered by us in our app we can use subjects.
+
+ WHEN you want to USE a subject, you must subscribe to the property which triggered that subject.
+ Important: Just like your own observables, you must unsubscribe to your subjects, whenever you don't need them(in ngOnDestroy()).
+  For unsubscribing from an observable you must store the result of using .subscribe() on the observable, into a property
+  which is the type of Subscription and then use that property and call .unsubscribe() on that prop in ngOnDestroy() .
+
+ Learn: In <> of Subject<>() we specify what data type will EVENTUALLY be emitted like what we had in EventEmitter<>() .
+ So like EventEmitter<>() , in the component which you want to emit an event , you can create a prop which would store the
+ result of new Subject<>() and we can then say . this.<the prop which has stored the result of new Subject<>()>.next();
+ So instead of emit() in EventEmitter<>() we called next() in Subject.
+
+ You don't use subjects instead of event emitters. So when you're using @Output() with your own even emitter prop, you shouldn't
+ use a subject instead of that event emitter.
+ IMPORTANT: So you only use subjects for cross component communication through services. So for example you create a prop which
+  stores the result of new Subject<>() in the service file and then include that service in the component you want to emit
+  an event using that subject by using subscribe() on prop of that service which stored the new Subject() TODO ????
+
+  Important: So if you were using a prop for just parent-child communication and not CROSS-component communication which
+   that prop would definitely decorated with @Output() and therefore that prop would be store the new instance of EventEmitter<>(),
+   you SHOULDN'T replace that EventEmitter<>() with Subject().
+   So now we can pass data from componentA to B in best possible way by using Subject<>() instead of EventEmitter<>().
+
+ Remember: Subjects() use next() instead of emit() to send a new value. Also when you want to consume a property which was
+ taken out from the subject, by using next() , you can use .subscribe() on the property which stored the new Subject<>() in that
+ service file.
+ Also after using subscribe() on a subject, it's a good practice to store the result of that subscription into a property with
+ type of Subscription and then use unsubscribe() on that prop in ngOnDestroy() .
+ So it's better to replace all of your event emitters with subjects.
+
+
+ -->
+
+<!-- You're creating a SPA with angular, so there isn't any submitting to the server in forms, instead you need to handle the
+ form through angular and then if you want to submit a form to the server, you need to reach out the server via
+ angular's HTTP service.
+
+ We need an object representation of your form in your ts code to work with that form.
+
+ Angular offers 2 approaches for handling forms:
+  1) Template driven approach: In this approach, you set up your form in template and angular will automatically infer the
+  structure of your form and will infer which controls and inputs your form has. So angular infers the form object from the DOM.
+  2) Reactive approach: In this approach, instead of angular, YOU will define the structure of the form in ts code and you
+   also setup the html code of form and then you manually connect them together.
+
+ The <form> element we haven't action attr which would point to a route also we don't specify the method attr on this element.
+ The reason is,   -->
 
 <!-- Right now we are using some *ngIf directives to navigate around the app. So first we catch the clicked element which happened
  on <app-header> and then we store that $event variable which has the clicked element to a prop in app.component.ts file and then
