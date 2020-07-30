@@ -2292,7 +2292,10 @@ Important: When an observable throws an error or gets canceled due to an error, 
    also setup the html code of form and then you manually connect them together.
 
  The <form> element we haven't action attr which would point to a route also we don't specify the method attr on this element.
- The reason is,   -->
+ The reason is that this form should not get submitted to the server. I don't want a HTTP request to be the result of clicking
+ the submit button of form. Instead, angular should handle the form and therefore we won't have an action attr or method att.
+ So because we aren't sending a request to server when clicking on submit button, the refresh icon of browser isn't spinning.
+ How we get angular to create that form object for us?-->
 
 <!-- Right now we are using some *ngIf directives to navigate around the app. So first we catch the clicked element which happened
  on <app-header> and then we store that $event variable which has the clicked element to a prop in app.component.ts file and then
