@@ -2295,7 +2295,79 @@ Important: When an observable throws an error or gets canceled due to an error, 
  The reason is that this form should not get submitted to the server. I don't want a HTTP request to be the result of clicking
  the submit button of form. Instead, angular should handle the form and therefore we won't have an action attr or method att.
  So because we aren't sending a request to server when clicking on submit button, the refresh icon of browser isn't spinning.
- How we get angular to create that form object for us?-->
+ How we get angular to create that form object for us?
+
+ 5. TD Creating the Form and Registering the Controls:
+ How angular creates such a JS object representing of our form in the template driven approach ?
+ The things you must do is in app.module.ts import the FormsModule and also add it to imports array.
+
+ Angular will automatically create a form for you(actually it will create a javascript object representation of that form),
+ WHEN it detects a <form> element in html code. So you can think of that <form> element serving as a selector for some angular
+ directive which that directive would create such a javascript object representation of the <form>...</form> for you.
+ But one thing does not automatically happen by angular and that is angular won't detect automatically the inputs in that <form>.
+ Because maybe you don't want to add all of the inputs which are in that <form> as controls to that object representation of that
+ form. Control is what is in that JS object. Again: Not every input in your html code might be a control that you want to have
+ in your object representation of that form. For example: Maybe you have a dropdown in that <form> which by clicking on it's
+ values, only something on the UI changes but the those values shouldn't be part of what gets submitted. Or maybe you use some
+ 3rd party package which adds some custom form controls which are not labled as <input> , so angular would have no chance of
+ detecting that element which that element must be as a control in the object rep of your form.
+ So you still need to register the controls of your forms manually. In other words you need to tell angular: "Hey! Within
+ that <form> element, those must be the actual controls of my form." So we must tell angular how our form looks like?
+ In the template driven approach that is super simple.
+ You must add the ngModel directive to the input you want to add it as a control of that form. But it's not using as two-way data
+ binding in this case. For doing 2-way data binding, we must use ngModel as [(ngModel)] . So in this form case, we add ngModel
+ without any parentheses or brackets. This ngModel is enough to tell angular: "hey, this input actually is a control of my form"
+ So ngModel is a directive which made available by FormsModule. So you can use ngModel for 2-way data binding but ngModel actually
+ is a part of a bigger module with more features. Also we need to give angular the name of the input we want it as a control of
+ that form. So by giving the name attr of the input we want to add it as a control of that form, that input is registered as
+ control of that form and would be in JS object representation of that form.
+ Learn: So we added ngModel and name attr for the input we want it as a control of that form.
+  <select> element is another type of html input elements.
+
+ Now we want to see key-value pairs which shows us what user inputs into each input.
+ -->
+<!-- 6. TD Submitting and Using the Form:
+Now let's make our form submittable, therefore we can see what users entered. For doing that, we create a method like onSubmit()
+and this method will be triggered whenever the form is submitted by user. Now where we must call this method?
+You might say click listener on the button for that element. Because that is the button we click when we want to submit that form.
+However this is not the best place to do that.
+Important: Currently we have a button for submitting the form which has the type="submit". So if we click on that button,
+ the default behavior of html will be triggered. Because if you have a <button> in the <form> element , that button will submit
+ the form and will send a request and besides of those, submitting that button will trigger a JS event. The submit event which is
+ built-into javascript and html. Angular uses this behavior and gives us a directive which we can place on the <form> and it is
+ ngSubmit and it actually only gives us one event that we can listen to that. So ngSubmit is a directive which gives us the
+ (ngSubmit) event which would be fired whenever that form is submitted so whenever that default behavior is triggered. Now
+ for the code that would execute after firing that (ngSubmit) event we can call that method.
+
+Important: In template driven approach as a rule of thumb, we have to do everything in html template(as the name of
+ this approach represents!). So everything you want to change about that form, or if you want to add functionality to that form
+ you do it in template.
+
+We can add local references to html elements to get access to those elements in that template file.
+
+Now for getting access to that object representing of the form, we can place a local reference on <form> and then pass that
+reference to () of method that we're calling that method after the form submitted. So like:
+
+<form (ngSubmit) = "onSubmit(f)" #f>...</form>
+
+Learn: The f or local reference of that <form> element which we are passing to onSubmit() method, is type of HTMLFormElement.
+
+Now provide an arg when you're defining that method to retreive the value we're passing to that method.
+Now the f would be the form object which isn't a JS object created by angular but that object is there and we just need a way to
+get access to that object and it's values. Now for get access to that automatically created object(in this case it's f reference),
+we must set that local reference on the <form>, to something which that sth is exposed by form.
+Learn: Keep in mind, the <form> element is kind of a selector for a directive which is built-into angular which will create that
+ JS object of the form automatically and that <form> would expose some data which we can fetch on that <form> element which remember
+ it's kind of a directive. we can access to that data by set local reference which is on the <form> to "ngForm".
+ #<local reference> = "ngForm" would tell angular: "Hey please give me access to that JS object of form you created automatically."
+So this was how you get access to the JS object representing the form which was created by angular automatically.
+Learn: Now the f(local reference on <form>) wouldn't be type of HTMLElementForm but instead of type of NgForm and you must import
+ NgForm from '@angular/forms'.
+you can see a strange class on the <form> which that class attr was generated by angular.
+
+
+
+ -->
 
 <!-- Right now we are using some *ngIf directives to navigate around the app. So first we catch the clicked element which happened
  on <app-header> and then we store that $event variable which has the clicked element to a prop in app.component.ts file and then
