@@ -26,7 +26,7 @@ We nest the recipe-item folder inside recipe-list because a recipe item is just 
   -->
 <!-- We need to pass data between components.
  We can use property in event biding not only on html elements and their native attrs and events, but we can use it on directives
- and we also did this with ngClass and ngStyle. So we can use it on our own components and bind it to our won custom properties
+ and we also did this with ngClass and ngStyle. So we can use it on our own components and bind it to our own custom properties
  and custom events.
  So property and event binding can be done on 3 things:
  1) HTML elements 2)Directives 3) Components
@@ -96,7 +96,7 @@ We nest the recipe-item folder inside recipe-list because a recipe item is just 
 
   RECAP:
   A)
-  Now our components can communicate with each other. The first kind of communicate is parent to child and we ca  do it
+  Now our components can communicate with each other. The first kind of communicate is parent to child and we can do it
   by binding properties of child component in parent component to some code and by executing that some code, we can change
   or affect the properties of that child component. So in this kind of communicate the parent component is affecting the child
   component by binding the properties of child component in template of parent component. So in this kind of communicate,
@@ -126,8 +126,6 @@ We nest the recipe-item folder inside recipe-list because a recipe item is just 
   can grow complex.
   So There are some use cases where the distance between two components that should talk to each other is so long so building a
   chain of inputs and outputs would be complex. So in services we have another approach of having components talk to each other.
-
-
   -->
 <!-- Assigning an alias to custom properties:
  You can pass an argument to @input with the property name that you want to use that new name of property outside of
@@ -362,8 +360,6 @@ We nest the recipe-item folder inside recipe-list because a recipe item is just 
  it wouldn't give you anything. But you can access them in ngViewInIt() and after this method.
  The order of running hooks by angular:
  ngOnChanges(), ngOnInit(), ngDoCheck(), ngAfterContentInit(), ngAfterContentChecked(), ngAfterViewInit(), ngAfterViewChecked()
-
-
  -->
 <!-- In Angular 8 and +: To @ContentChild() and @ViewChild(), you must pass a second arg which is {static: true} if needed.
 TODO write the full notice...-->
@@ -2293,7 +2289,7 @@ Important: When an observable throws an error or gets canceled due to an error, 
 
  The <form> element we haven't action attr which would point to a route also we don't specify the method attr on this element.
  The reason is that this form should not get submitted to the server. I don't want a HTTP request to be the result of clicking
- the submit button of form. Instead, angular should handle the form and therefore we won't have an action attr or method att.
+ the submit button of form. Instead, angular should handle the form and therefore we won't have an action attr or method attr.
  So because we aren't sending a request to server when clicking on submit button, the refresh icon of browser isn't spinning.
  How we get angular to create that form object for us?
 
@@ -2570,8 +2566,620 @@ IMPORTANT: For just GETTING the value that the user submits in the inputs, you m
  inputs and bind ngModel to a prop in your .ts file and then output that prop on that template file.
 
 17. TD Setting and Patching Form Values:
+A different approach to 2-way data binding for changing the value of our inputs is to use this new approach.
+In this approach, we can use 2 different methods.
+First of all you must give a local reference to whole form and then get that local reference via @ViewChild() and create a prop
+for this @ViewChild() . Then on that prop, we can use setValue() method. This method allows you to set the value of whole form
+and in () of this method we need to pass a JS object which EXACTLY is representing our form. For example if you have some
+groups of controls in your form you must provide a js object inside this object and ... .
 
- -->
+EX) Our form has a group of inputs with names of username and email and an input with name of secret.
+@ViewChild('<the name of local reference of whole form>') signupForm: NgForm;
+this.signupForm.setValue({
+  userData: {
+    username: ...
+    email: ...
+  },
+  secret:...
+});
+
+When using this method by using a click listener which set the values of our inputs in page to the values we set in
+setValue() method, these values in setValue() would overwrite the values that user inputted (we had another button of type
+button too! Which we placed click listener on it.)
+So with this approach we saw how we can set the values of our controls with ONE command and that command is setValue() which
+in () of this method, we pass in the same copy of our form as a JS object and it can OVERWRITE the value of controls of
+that form. But this is not the best approach.
+
+The second approach is to use that prop which has the local reference of whole form using @ViewChild() and on that prop, we access
+the form prop which is an object and then on that we can use patchValue() method. So this method is not available on the
+prop which has the local reference of whole form, directly, so unlike setValue() method, but on form object.
+In () of this method, we pass a JS object where you ONLY overwrite certain controls. So with this method you don't need to pass
+in an object which is the EXACT copy of whole controls that form object gives that to us.
+
+So patchValue() is only available on the form wrapped by ngForm itself. Also setValue() would be available on form too!
+So we can have: this.signupForm.form.setValue();
+
+RECAP: setValue() overwrties the whole form but patchValue() overwrite parts of the form you specify.
+
+EX)
+this.signupForm.form.patchValue();
+
+18. TD Using Form Data:
+For getting the values that user submitted, you can create a local reference on the whole form and then get that local reference
+which is in the html template file, in .ts file by using @ViewChild() and then create a prop for that @ViewChild() . Now
+after creating that prop, we can use:
+this.<prop which has @ViewChild('<name of local reference of whole form>')>.value.<if inputs are grouped you must first specify the
+group name>.<name attr of input>
+
+19. TD Resetting Forms:
+Now let's say we extract or get all of the submitted values in form and now we want to reset the form.
+For doing that, we can use the prop which has the local reference of whole form by using @ViewChild() and then we can call
+reset() method. This would reset the form and that means it would not only empty all the inputs, because you can empty out
+all of the form with setValue() method too. But reset() will ALSO reset the STATE like the valid, the touched and ... .
+But you can also pass the same object we pass to setValue() method, to reset() method which that object is the EXACT copy
+of all of our controls in that form and then reset the form to specific values.
+
+After representing the form, if you inspect the controls of form, all of the classes have been reseted to ng-untouched and
+ng-pristine and ng-invalid . So it's looks like the page was loaded again. -->
+<!-- So we saw that in template driven approach, ANGULAR infers the form object from the DOM. In this approach, form is created
+programmatically and synchronized with the DOM.
+For start to working with this approach we start from .ts file of the component not from template file. First we create a prop
+which will hold our form. So let's give that prop any name we want but it's type is crucial. The type must be FormGroup and
+we must import it from '@angular/forms'. Also remember we imported ngForm from this package and use ngForm in TD approach and
+ngForm was automatically created wrapper. But ngForm in the end was wrapping a FormGroup. Because in angular in the end,
+a form is a group of controls. Therefore the overall form is also a FormGroup.
+Now for this prop we don't need to set an initial value for now.
+In reactive approach, especially when we want to connect our programmatically created form to our html code of that template,
+you need to import sth in app.module.ts file. As a side not, in that file, you don't need the FormsModule for this approach.
+Because that module was necessary for TD approach. Instead you need ReactiveFormsModule to be imported in that file.
+So this is the file we need in order to build our own form and then connect it to our HTML code.
+
+23. Reactive Creating a Form in Code:
+You can initialize the prop which holds our form by using assign operator but it's better to do that assignment in a method.
+So we can do that assignment in ngOnInit() method. So in this method, we will initialize our form. It's very important to
+initialize our programmatic form, BEFORE rendering the template file of that component. So make sure to use a lifecycle hook
+which is called BEFORE the template is rendered, for initializing the programmatic form, like ngOnInit() hook.
+Now assign that prop to what? Keep in mind, this prop is type of FormGroup, so we need to assign a new instance of FormGroup()
+class to that prop. Now we need to pass a JS object to that class. We can add some controls to this object. Controls basically are
+just key-value pairs in this object which we pass to the overall FormGroup .
+
+We wrap the key name of controls in '' , because with doing this, we make sure that during minification or when this code gets
+mangled, this property name is kept because we will reference it in HTML code. This work might not be necessary and it might not
+get destroyed, but for making sure, we did that.
+To FormControl() constructor, we can pass a couple of arguments.The first arg is initial state or initial value of that control.
+The second arg would be a single validator or an array of validators that we want to apply to that control.
+The third arg would be the potential asynchronous validators.
+
+Remember: Radio buttons are also inputs at the end. So to angular, they are simply controls.
+In this example, 'gender' is radio button that we want to by default, select 'male' value.
+
+EX) class... {
+  signupForm: FormGroup;
+  ngOnInit() {
+    this.signupForm = new FormGroup({
+      'username': new FormControl(),
+      'email': new FormControl(),
+      'gender': new FormControl('male')
+    });
+  }
+}
+
+Now let's connect this form we created in .ts to our form we have set up in html code.(We must already created the form in html
+template file, now we need to connect them.)
+
+24. Reactive Syncing HTML and Form:
+Currently, angular doesn't know which one of our typescript control relate to which input in our template code. Angular
+doesn't even know that our programmatic form should be attached to the form we have in html code!
+Right now, angular is just know want thing which is that it knows we have a form in html code. In other words, right now
+the one thing that angular is doing is autodetecting that we have a form in html code and it creates a form for us.
+So we have to add some directives to overwrite this default behavior in order to give angular new instructions.
+For these directives to work, you need to make sure that you added ReactiveFormsModule in imports array of app.module file.
+The first directive, we must add is formGroup directive to <form> itself and with property binding.
+[formGroup] on overall form, tells angular: "Hey, please take MY formGroup and don't infer a from and don't create a form for us,
+instead just use MY formGroup".
+Also we need to set property binding here, because we need to pass OUR form which is in .ts file .
+Now by passing the form we created in a prop of .ts file , to directive on <form> , we still need to tell angular which controls
+should be connected to which inputs in the template code. For doing this, we need another directive named formControlName
+and we use this directives on input elements which must be connected to a control in .ts file and in "" of this directive
+we must write the name of control in .ts file.
+If you're wondering why we didn't use property binding with formControlName directive, because we're passing a string to "" of
+this directive. But if you want to use property binding, you must wrap that directive into [] and then enclose the name of control
+which that name is a string, inside '' .Otherwise, without '', it would search for a PROPERTY with that name.
+
+Learn: When you want to pass just a string to a directive, you can omit the [] syntax. But when you want to bind the property to a
+ typescript snippet, you must use the [] syntax.
+
+So with this, we're telling angular: "Hey my form should be connected to the form which is stored in signupForm property and
+in this form, that input should be connected to the control which is in .ts file with the name of username."
+
+<form [formGroup] = "signupForm">
+  <input formControlName = "username">
+  OR
+  <input [formControlName] = "'username'">
+</form>
+
+Now because our html form and inputs are connected to controls, you can see now angular gives for example ng-touched or ng-valid
+classes to our inputs and form. So they are connected and the state of our inputs and form is tracked by angular.
+
+Now we want to submit the form.
+
+25. Reactive Submitting the Form:
+In TD approach, we used ngSubmit directive on the form element. Well we still do the same in this approach. Because we still
+want to react to the default submit event which is fired by html and JS. So we still add ngSubmit directive on form element and
+we must bind it in the way of event binding. So we wrap that directive inside () and for "" of this directive we can call a method.
+
+<form [formGroup] = "signupForm" (ngSubmit) = "onSubmit()">
+The difference to TD approach, is that we don't need to get the form which is in html code, via local reference, this actually
+won't work anymore. Because we're not using angular's auto-creation mechanism in this approach. But we don't NEED to get this
+reference. Because HEY! We created this form ON OUR OWN! In opposite of TD approach which angular creates that js representation
+of that form. So we needed to somehow access to that auto-created form.
+We already got access to that form in our .ts code and actually in every method in .ts code. Because that form is a prop in the
+class of .ts code. So we have access to the submitted values of form and states of form and ... by using that prop.
+So whatever you pass to FormGroup({}) which makes up your js representative of your form, is what you get from values prop
+of the prop which holds your form.
+So you can bind it to your own model and easily make sure that the form structure matches the structure of your model.
+
+.ts file:
+class... {
+  signupForm: FormGroup;
+  ngOnInit() {
+    this.signupForm = new FormGroup({
+      'username': new FormControl(),
+      'email': new FormControl(),
+      'gender': new FormControl('male')
+    });
+  }
+
+  onSubmit() {
+    console.log(this.signupForm);
+  }
+}
+
+So this was how you can submit the form and access the values of submitted form but now using your own created form in .ts .
+
+26. Reactive Adding Validation:
+If you want to add required attr to an input in reactive approach it wouldn't work. Because:
+Important: You're not configuring the form in the template, you're only synchronizing it with the directives like
+ formControlName directive.
+Instead you're configuring the form in .ts code. That's why FromControl() takes more than 1 arg. So in the first arg of it,
+you can set the default value, the second arg allows you to specify some validators. For example for using required validator,
+first you need to write Validators object and then on that object you have a couple of built-in validators like required
+validator. bUT MAKE SURE TO NOT CALL THAT validator. So don't write: Validator.required() . Instead Validator.required .
+So don't use parentheses to actually call that validator. Because we don't want to execute that method (in this case
+required method- required is a static method which made available by using Validators object), instead you only want to pass
+the reference to that method. So we didn't use () , because we want ANGULAR execute that method, WHENEVER it detects that
+the input of that form control which that validator is using in that form control, has changed.
+We can pass multiple validators by passing them into an array.
+So don't execute the validators and just reference of them.
+So as soon as you write something in the input which has required validator on it, it would become valid and it would get
+the ng-valid class instead of ng-invalid .
+
+27. Reactive Getting Access to Controls:
+In reactive approach, let's assume we want to display a message for
+<input formControlName = "username">
+
+<p>Please enter a valid username!</p>
+
+In TD approach, for getting access to a control, we can say: <input formControlName = "username" #username="ngModel">
+But in reactive, we can't do this.
+We can add *ngIf , because we want to determine if show this message or not? and then first, we access the overall form we're
+in it currently and then use the get() method. The get() method in reactive approach, allows us to our control easily. In ()
+of get() you either specify the control name or the path to the control.Then use the valid prop for determining. So if that
+In the example of instructor, the path is equal to name of that control, because he has one level of nesting. So it would be
+'username'.
+valid prop is used to determine if that control is valid or not.
+Also to give the user to change the value of that control we used && signupForm.get('username').touched
+
+<form [formGroup] = "signupForm" (ngSubmit) = "onSubmit()">
+  <input type="text" formControlName = "username" *ngIf="">
+  <p *ngIf="!signupForm.get('username').valid && signupForm.get('username').touched">Please enter a valid username!</p>
+</form>
+
+So that was how you can get access to a control by using get() method.
+
+Also for overall form, you can determine if the overal form is valid or not. But in this case you don't need to use get('<name of
+control of path to control>') method. Because we want to determine the form not control. So like:
+<p *ngIf="!signupForm.valid && signupForm.touched">Please enter a valid data!</p>
+
+So as you can see we have access to valid or touched or ... props even without using get() ,IF we want to access the whole
+form.
+So now if even one of the controls of the form is invalid, the form is also invalid too and that <p> for form would displayed.
+So actually we're using the form STATE. Like touched or invalid or ... states.
+
+input.ng-invalid,ng-touched {
+  border: 1px solid red;
+}
+
+Important: The state classes are the same in both approaches.
+-->
+<!-- 28. Reactive Grouping Controls:
+get() also can takes the path to a control in our form. So you can specify the path, because you might have a nested form.
+Let's say we have a FormGroup() named userData. Remember: FormGroup() is not only used to be on the overall form(because the
+overall form is a form group), but you can still have FormGroup() inside of FormGroup() .
+So we can add some from controls inside of a form group. Like:
+this.signupForm = new FormGroup({
+      'userData': new FromGroup({
+        'username': new FormControl(),
+        'email': new FormControl(),
+      }),
+      'gender': new FormControl('male')
+    });
+So now we have a nested form. We need to reflect that into our HTML template, because right now if we look at our form, we have
+an error, which says we haven't a control called username on the overall form and that's true, we have nested that control in
+another form which is called userData. Also it can't find email control.
+So first of all we need to update our synchronization.  TODO till 1:29  -->
+
+<!-- 3. How Does Angular Interact With Backends:
+We want to store data to a database or fetch some data from db, when the app restarts or when a user revisits
+your page and so on.
+The thing is, you don't connect angular to a database DIRECTLY. This means you don't enter your database credentails
+into your angular app or anything like that. Because if you do that, it would be highly insecure. Because everyone can
+read your angular code, since it's a frontend JS application, everyone can inspect the code there. So it means you
+must not store credentials in there. But STILL, we can authenticate users in frontend!
+So instead of directly connect to database, we can send HTTP requests and get back HTTP responses to and from a server.
+A server in the end, is defined as an API.
+Now, such an API is almost like a normal website but when you visit it's url, you are not getting back HTML but you're
+getting back data which mostly is in JSON format. We don't use angular for creating those apis instead we use server side
+languages for that. BUT you can communicate with those apis by using angular and on that server you can have code that
+does interact with the database to store and fetch data. Also of course, there are more reasons for communicating with
+a server than just for storing or fetching data from server and communicating with the server from frontend, is not just
+about database access. Because you can also upload files or you could send some analytics to the back-end or any other
+reason for why you might need to to talk to some backend server.
+
+4. The Anatomy of a Http Request:
+1) The crucial part of a HTTP request is the URL you're sending the request to. That URL we're sending the request is also
+called an API endpoint and that endpoint or URL is sth like: <your domain>/posts/1 or ... .
+2) However, when you're communicating with a RESTFUL API, it's not just about the URL but also about the HTTP verb you're using.
+That defines which KIND of HTTP request you want to send to that endpoint. Do you want to store a new data?
+ Do you want to fetch data?
+The HTTP verbs show that but it always depends on the API you're working with. Because the API specifies which
+verbs are available for which endpoints. So we must know which endpoints support which verbs.
+3) The metadata of request is called the headers of that request. These are optional, also some default headers will append
+to the request by browser and angular, but you can also append your own headers.
+4)Also for some HTTP verbs, you can also add a body to request. In POST, PUT, PATCH requests we have body of the request.
+
+5. Backend (Firebase) Setup:
+Firebase is a whole backend solution which gives us a restful api too.
+First go to console of firebase then create a project. We don't use cloud firestore but instead we will use realtime
+database and then choose start in test mode. In this mode, we're disabling the protecting against unrelated accesses.
+Now you can see that firebase gives you an URL that you can send requests to that url.
+
+6. Sending a POST Request:
+For sending http request, we need to unlock a feature. So let's go to app.module.ts file and we need to add a new
+angular module, which is HttpClientModule from '@angular/common/http' and then add that module to imports array.
+By doing that, the HttpClientModule is unlocked in our whole project. For using that module in a component, we need
+to add that module in () of constructor() of the component .ts file and store that module into a prop of that class.
+and the type of that prop would be HttpClient.
+Now let's say in onCreatePost() we want to send a POST request to firebase. So let's use that prop.
+The first arg of the post() method is the url you want to send that request to. So paste the url that firebase gave you
+but that's not the entire url we want to send that request to. On other apis you would have .../posts/asdasd ,
+firebase it's a bit different. In there, you have that url it gave you and then you can add your own segments after that
+url and this would be replicated as folders in the database of your project and it's looks like you're directly talking
+to the database, but keep in mind that firebase only abstracts this away from you. Because you are still communicating
+with a rest api which is provided by firebase, they are just translating your path you are sending it, to a folder
+structure in your db. Therefore you are not DIRECTLY communicating with the database.
+IMPORTANT: You NEVER communicate DIRECTLY with a database from inside your angular app.
+
+So let's say, in that url provided by firebase, we add /posts which would be a folder and then add .json to the end of
+it. That .json is a firebase requirment and it's not a angular requirement or rest api requirement, only a requirement
+by firebase rest api.
+Now we need the request body. The post() method requires 2 args which the second arg is request body.
+Important: You normally send JSON data when interacting with a restful api. The angular's HttpClient will take our
+javascript object and automatically convert it to JSON. So it still send JSON data but we pass a JS object to that
+method because angular will convert that object to json automatically.
+Now after sending the request, if you check the network tab, you don't see any related request. So somehow this request
+is not being sent. Because angular heavily uses observables and HTTP request are also managed via observables.
+Learn: So we can wrap those http request and then subscribe to them in order to get informed about the response of that
+HTTP request and be able to handle the errors and ... . The thing just is, angular is smart. Because if you are not
+subscribing to that prepared http request or in other words sth like:
+this.http.post(<url0>, <body of url which is an object>);
+So if you don't subscribe to this, or in other words if you don't subscribe to the observable which wraps your HTTP
+request, then angular and rxJS know that no one is interested in the response of this request and therefore the request
+doesn't even get sent. Because if no one's interested in the reponse of that request, then it won't send the request!
+So post() will indeed return an observable. So post() would not give us the response or anything like that as the
+return value instead it gives us an observable which wraps your request and in order to get access to response,
+you have to call .subscribe() on the post() and in subscribe() we can access to response . Because angular or HTTPClient
+would do even more than just giving you the response, it will automatically extract the data attached to the response(
+Or the response body). Though you also have some ways of accessing the full response.
+
+this.http.post(<url0>, <body of url which is an object>).subscribe((responseData) => {
+  console.log(responseData);
+})
+
+When you console.log() the data, you see that it gives you an crypted id, which is also stored in firebase.
+
+You don't need to unsubscribe this subscription because it will complete after being done anyways and it's an observable
+which is provided by angular which you never need to manage subscription of it.
+Now you can see 2! requests to posts endpoint. The first request is of type OPTIONS(just look at the request method
+in network tab to see the type of request). So that's a different HTTP verb which would first of all check whether the
+POST request is allowed to be sent and if it (OPTIONS request) gets a success response, it would send the actual request
+which is our POST request and in that second one, firebase would send some response headers .
+Angular would automatically attach Accept and Content-Type to request headers. In request payload you can see the
+data which was attached to request. In response tab you can see the response we get.
+SO:
+IMPORTANT: Requests would only be sent if you subscribe.
+
+7. GETting Data:
+When you want to transform or convert the object you get after GET request, you can use observable operators.
+
+8. Using RxJS Operators to Transform Response Data:
+We can transform data inside () of subscribe() .But it's a good practice to use observable operators because they allow us
+to write cleaner code and in different steps. So in different steps we funnel our data which that data can easily be swapped or
+adjusted. So with that, you would have a lean subscribe() method and have other steps that focus on other parts. Therefore
+before subscribe() , we can use pipe() . Because pipe() is a method that allows you to funnel the data that observables
+provides, through multiple operators BEFORE that data reach the subscribe() method.
+Learn: The map() operator allows us to get some data through observable and return new data which that data is automatically
+ re-wrapped into an observable so therefore we can still subscribe() to it. So if that new data wouldn't be wrapped into an
+ observable again, we couldn't subscribe() to it. So we couldn't get the data.
+
+So we can call map() inside () of pipe() and then in () of map, it gets another function as the arg. That function we pass into
+map() , would get the response data which we called it responseData and in that function, we should return the converted data
+which would be again re-wrapped into an observable.
+
+Learn: To convert a JS object into an array, we have to manually loop through all the keys and create a new array.
+ So first we can declare an empty array and then use for(in) loop to loop through all of the keys of object we want to
+ convert it which these keys are in responseData. So we must loop through keys in responseData. So it must be sth like:
+ for(const key in responseData).
+ Then we must push each piece of data into that empty array.
+
+EX)this.http.get('<url>')
+.pipe(map((responseData: {[key: string]}) => {
+  const postArray = [];
+
+  if (responseData.hasOwnProperty(key)) {
+     for(const key in responseData) {
+      postArray.push({...responseData[key]}, id: key);
+    }
+  }
+
+  return postArray;
+}))
+.subscribe((posts) => {
+console.log(posts);}
+this.loadedPosts = posts;
+);
+
+But we don't just want to push each key in that array, instead we want to push a new object. So let's add {} and spread operator.
+By doing that, we're going to pull out all of the key-value pairs of the nested object we're accessing using responseData. Because
+that allows us to add one new key-value pair to each object we're pushing to postsArray and that new key-value pair would be
+an id field with it's value which actually stores the key. Because that key or cryptic string is a perfect id and it's a unique
+id which is generated bt firebase.Therefore we want to keep that unique id which is for each post, so therefore for example
+if you want to delete a single post or anything like that, we can use that id.
+When you're using a for in loop, it's a good practice to wrap it in an if statement. So in that if state, we're checking that
+we don't trying to access a key of a prototype. Now return the new array(new stuff) from map() .
+
+Now the id field would also be added to the each element of new array.
+
+9. Using Types with the HttpClient:
+Important: Right now if you hover over posts in () of subscribe() , you notice that it's of type any. That means typescript is
+ not able to detect how our posts would look like(the type of posts) or the format of posts would look like.
+Because the postsArray is also type of any. Because the only thing that ts is seeing is that id field but the object we push
+into postsArray (which that object is responseData[key]) is totally unknown to .ts because .ts doesn't know about the format
+or type of responseData. It just knows it is an object. So we can tell .ts how it's looks like. One way is to assign a
+type on the argument(responseData). So we say: Yeah! I know that responseData WOULD be an object where in that object we have
+a randomly generated string. So let's use a placeholder by using [] and then add the things that would be on that responseData.
+key: string in example, means we don't know the exact name of the key of that object, because it's randomly generated by firebase
+or actually not randomly but it's generated by firebase and we do have many different properties but we know it will be a
+property that can be interpreted as a string and the value of that key is our actual post which generally is:
+{title: string; content: string} .But for simplifying this object a bit for ourselves, we can create a post model file.
+Where in that file we export an interface and that interface would just have that format which I mentioned above and also
+optionally it can have an id field. So let's add a ? to show it is optional:
+
+post.model.ts:
+export interface {
+  title: string,
+  content: string,
+  id?: string
+}
+
+and now we can use that interface like:
+.pipe(map((responseData: { [key: string]: Post }) => {
+instead of:
+.pipe(map((responseData: { [key: string]: {title: string; content: string, id?: string} }) => {
+
+When you don't know the name of a key or prop, you can wrap it in a []. TODO???
+
+With this, ts knows what is inside responseData and therefore we can also set the type of postsArray too. Which would be
+an array of type Posts s . So for indicating an array of some type, we first write the name of type and then use [].
+const postArray: Post[] = [];
+
+With these improvements we have better auto completion too.
+However because we have Http types here, we can use angular HttpClient for assigning and specifying the types.
+With this approach, we don't need to assign the type of responseData(the argument of inner function of map(()=> {}) ) there,
+or in subscribe() or in whatever you're accessing the incoming data from observable which we named it desirely. Instead get()
+method is so called a generic method. This means you can add angled brackets(or <>) in front of that method and between the
+<> , you store the type which the response will return as the body of it once it's done. So in <> , we're defining the
+response's body type which is stored in map(()=> {}) and that would then automatically be handled by angular HttpClient and
+ts knows that the responseData would have that type format which we specified in <> .You can use these <> on all of the
+request methods to add some extra piece of information which is optional but is recommended about the data you're getting back
+from the http request or in other words from observable.
+So you can define the response data types on generic HTTP verb methods and on <>.
+
+10. Outputting Posts:
+In html template:
+<p *ngIf="loadedPosts.length < 1">No posts available!</p>
+<ul *ngIf="loadedPosts.length > 1">
+
+ I named post desirely but loadedPosts is our actual property in .ts file of this html template in example
+  <li *ngFor="let post of loadedPosts">
+    <h1>{{post.title}}</h1>
+    <p>{{post.content}}</p>
+  </li>
+</ul>
+
+11. Showing a Loading Indicator:
+You can define a prop which in the beginning is false and that property is indicating the request is on it's way or not.
+So let's define a prop named isFetching(if we just use this prop in getting the data) or isLoading and then set it to true
+when fetching or posting or ... requests start.So before using:
+this.http.<http verb>(...).subscribe();
+we can set that prop to true.
+
+Once the request is done(in the first arg of subscribe() which we pass a function to subscribe()), we can set:
+this.isFetching = false;
+
+Now we can show a loading indicator whilst we are fetching the posts or making some HTTP requests.
+
+So now in our template we want to show that <p> which is saying: "No posts", when we are not CURRENTLY fetching the posts.Because
+if we are fetching posts, therefore we want to wait for the result of that fetching. So we don't want to immidiately show that
+no posts available. So when we the isLoading (or isFetching in this case) is true we don't want to show any messages.
+With this, we would have the third scenario, the first one is that we have no posts after receving the request's data. The
+second one is after getting the data, we have some data to show and the third scenario is that the request is in progress.
+So in our template for outputting the data of http request we can say:
+
+<p *ngIf="loadedPosts.length < 1 && !isFetching">No posts available!</p>
+
+<ul *ngIf="loadedPosts.length > 1 && !isFetching">
+<li *ngFor="let post of loadedPosts">
+    <h1>{{post.title}}</h1>
+    <p>{{post.content}}</p>
+  </li>
+</ul>
+
+<p *ngIf="isLoading">Loading...</p>
+
+By doing this and no more work, when the request is pending and is on it's way, the loading... would show and as soon as the
+request and it's result is received, the loading... would be REMOVED because it's *ngIf would return false and therefore the other
+<ul> or <p> would shown.
+
+Important: Why we don't need some logic for removing the <p *ngIf="isLoading">Loading...</p> when the result was received?
+ Or in other words, why automatically, when the result of http request was received by us, the <p *ngIf="isLoading">Loading...</p>
+ was removed? Why we don't need to implement some logic for removing that, when the result of request was received?
+-->
+<!-- 12. Using a Service for Http Requests:
+Right now, because we're using http requests in the component, our component is grown big. Also in the .ts file of our component,
+we have some code which is indirectly related to the user interface(the user interface is the job of the components). Yeah,
+of course we want to send a request when a button is clicked(clicking the button is related to UI!) and then we want to display
+the response of that request(this is also related to UI!). BUT! Transforming the result of that request has nothing to do with
+UI. So it's a good practice to outsource that work into services. So the services are part of your angular app that do the heavy
+work and the dirty work and your components are releatively LEAN and are mostly concerned with the template related work.
+Like isFetching property and ... .So let's create a service named posts.service.ts and in that file we export a class named
+PostsService . Now when you create a service you can make it available for whole app. There are 2 ways of doing that.
+1) You can add @Injectable() before exporting the class and in () of @Injectable() , you need to pass an object and in that
+object we set providedIn prop to 'root'. This approach is better.
+
+2) You could also add that service in providers array of app.module.ts file.
+In that service, we want to have our HTTP request methods and we only want to get the responses in our front-end or better say
+components. So therefore in this service, we can add a method named createAndStorePost() and in there we get title and content.
+Also we want to fetch or get our posts. So let's create fetchPosts() {} .
+Now we want the http for sending the requests right? So let's inject the HttpClient service in this new service and then save
+it in a property of this class. So we must add constructor() {} of this class and ...
+
+@Injectable({providedIn: 'root'})
+export class PostsService
+
+constructor(private http: HttpClient) {}
+
+createAndStorePost (title: string, content: string) {
+  const postData: Post = {title: title, content: content};
+  this.http.post<{name: string}>(<'url'>, <data we want to send via this http verb>)subscribe(() => {
+
+  });
+}
+
+fetchPosts () {
+
+}
+
+Now we can call the service methods in our component files to send the requests from components, based on some condition in
+template files. So in .ts file of that component, we need to include this newly created service inside () of constrcutor.
+
+.ts file of component:
+
+This onCreatePost() method would be called in template file based on some click by the user or ... and then when this onCreatePost()
+method is called, we call a method from service to send a http request.
+onCreatePost(postData: Post) {
+  this.postService.createAndStorePost(postData.title, postData.content);
+}
+
+onFetchPosts () {
+  //this.isFetching = true;
+  this.postsService.fetchPosts();
+}
+
+Remember: We don't need to create some props in the service file to store the results of subscribing to http requests. Because
+isFetching (which is used to indicate if the results of request are came back or not?) and loadedPosts props, clearly belonged
+to our component and not to the service file.
+
+Now the logic of sending the request is outsourced in a service. But when you have a prop for specifying whether the request is
+in progress or not, (like isFetching prop) , when you outsource the code for sending request, from the .ts file of component.
+We would have problem. Because right now, that prop is in .ts component file but the code of sending request is in service file.
+Because the component is where we use those props by displaying the incoming data from service and ... .
+Important: Now if you need to be informed about the http request process or in other words, get informed about if the results
+ was came back or the observable was complete or ... , we can return the sending request code which would return an observable
+ in the service file and then when we're calling that service method in the component file, we can use subscribe() on it.
+ Now why we are subscribing in the component file instead of subscribing the observable right in the service file and after
+ using http verb? Because we want to change some props which indicates the progress or state of the observable of that request
+ and we know these props are in component file. So we need to use .subscribe() in the component file and NOT in the service
+ file to get informed about the changes of loading and errors and ... .
+
+
+13. Services & Components Working Together:
+For fixing the props which aren't informed about the result of observable, we can use a subject in the service file and in that
+file, we can next our posts when we got them and then we subscribe() to that subject in the component file. But remember, subjects
+are good to use if we have multiple components which are interested in data of a http request. So a better approach in this case
+is to simply return the result of this.http.get() or ... in service file. So in service file, we don't use .subscribe() when
+sending http request, instead, in service file we just return the prepared observable which is because of http request. So
+currently the http request won't sent. Because as I mentioned, http requests are only sent when someone is interested in that
+request and just by saying: this.http.get(...); the request won't sent. Now by returning the observable of http request in
+service file, we can call that method which returns an observable in component file and then use .subscribe() on it to actually
+send the request and in component file, BEFORE subscribing to observable we can set this.isLoading to true
+
+So now, we moved the result handling of http requests into the component, but more heavy lifting or the part which is detached
+from the UI which is sending the request and the transformation of the resulted data with pipe() to the service file.
+This was the BEST practice when working with angular and http requests. So we moved the managing of loading state and calling the
+actual request and getting and managing the data which is the result of sending http request.Move these tasks to component file,
+therefore by doing that, be informed about the result of http request and state of pending the request by calling subscribe()
+on the observable and by using a prop which handles the state of loading of request.
+
+Sometime you can also subscribe() to observable pf http request right in the service file:
+So also remember: If your component DOESN'T CARE about the response of http request and about whether the request is done or
+not, in that case, there is no reason to subscribe() in the component file. For example when you create a post and want to post
+it to server.
+
+Learn: When you have some code duplication in 2 or more methods, you can outsource the duplicated code to a new PRIVATE method of
+ the calss which those methods with duplicated code are exist in that class and then call that private method in those methods.
+ We declared that new method, private, because we just need that method in THAT exact class and nowhere else. So why define it
+ public or protected?
+
+14. Sending a DELETE Request:
+When you have a method that is responsible for deleting a post, you can define the delete operation in service and then
+subscribe() to that method in service is component file. Why subscribing to it in component file and not in service file?
+Because for example maybe we want to get informed about our data was cleared or deleted to change the state of the traker
+properties or the properties which do other stuff.
+The first arg of subscribe() which is a function, will only executed if the observable was succeed.
+
+15. Handling Errors:
+When we're interacting with severs, things can go wrong, so we need error handling when interacting with servers. For example
+when you're sending a request with incorrect data, or the server is offline! or there's an error on the server or user is not
+authenticated for sending that request.
+
+Test mode when creating a database in firebase means read and write to this database is granted by everyone! Therefore no one
+needs to authenticate himself for doing these works.
+
+You can simulate that error condition by firebase! So in firebase go to database>rules . For doing that, you can set ".read" to
+false, there would be no condition which under that condition you would be allowed, not even if you are authenticated. Now
+if you send get request for fetching posts, you would get an error and when you get the error you see that we still have
+loading... !
+1) The first way of handling errors:
+Learn: The first arg of subscribe() would be executed when new data is came from server. The second arg os subscribe() would
+ trigger whenever we got an error and we can receive that error by providing an arg which gets the error.
+
+Now for error handling, in the .ts file of component, we can create a new property named error and set it to null initially and
+then in html template of that component we can add a <div> for showing errors and some elements in that <div> like <p> which
+show the error messages to the user. Now the idea is, we only show that <div> by using *ngIf like:
+<div class="danger" *ngIf = "error">
+  ...
+</div>
+Also you can add an errorMsg property to store the error message which is written by you or ... and then show it in template.
+If you need more information about the error you can dive deeper into the error object you're getting in the arg of second function
+of subscribe() .
+Also by doing this, we must check if we have NOT an error when showing the loading... message.
+Important: Because if we have error we shouldn't show the loading... message and instead we want to show the error <div>
+
+16. Using Subjects for Error Handling:
+2) The second way of handling errors:
+This other way of handling errors could be nice in cases that
+-->
 
 <!-- Right now we are using some *ngIf directives to navigate around the app. So first we catch the clicked element which happened
  on <app-header> and then we store that $event variable which has the clicked element to a prop in app.component.ts file and then
