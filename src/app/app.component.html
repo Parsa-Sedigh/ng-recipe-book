@@ -241,7 +241,7 @@ We nest the recipe-item folder inside recipe-list because a recipe item is just 
  our app works again.
  It's better not to change the element through using @ViewChild() and it's property. So you shouldn't access DOM through this
  approach. Because angular offers you a better way of accessing DOM with directives. So generally you should use string interpolation
- pr property binding if you want to output something in DOM and you shouldn't mess with any element itself if you even CAN do it through
+ or property binding if you want to output something in DOM and you shouldn't mess with any element itself if you even CAN do it through
  angular.
  -->
 <!-- Another way of passing data around:
@@ -1307,7 +1307,7 @@ Now if we click on that <button> , it would throw an error, like when we're usin
  was changed. So angular cleverly doesn't really instantiate this component, because if it instantiate this component, this work
  would only cost us performance. Why angular would want to re-render a component which we're already on it? Now you might say:
  "Because the data which is based on the dynamic segments, has changed!!! So angular must re-render that component!"
- But angular doesn't know and this good that by default it doesn't recreate the whole component and destroy the old componen, if
+ But angular doesn't know and this good that by default it doesn't recreate the whole component and destroy the old component, if
  we ALREADY are on that component.
  But we want the updated data on the same component, right?
  It's fine to use snapshot property for FIRST initialization. But to be able to react to subsequent changes, we need a different
@@ -2744,7 +2744,7 @@ Important: You're not configuring the form in the template, you're only synchron
 Instead you're configuring the form in .ts code. That's why FromControl() takes more than 1 arg. So in the first arg of it,
 you can set the default value, the second arg allows you to specify some validators. For example for using required validator,
 first you need to write Validators object and then on that object you have a couple of built-in validators like required
-validator. bUT MAKE SURE TO NOT CALL THAT validator. So don't write: Validator.required() . Instead Validator.required .
+validator. bUT MAKE SURE TO NOT CALL that validator. So don't write: Validators.required() . Instead Validators.required .
 So don't use parentheses to actually call that validator. Because we don't want to execute that method (in this case
 required method- required is a static method which made available by using Validators object), instead you only want to pass
 the reference to that method. So we didn't use () , because we want ANGULAR execute that method, WHENEVER it detects that
@@ -2795,19 +2795,130 @@ Important: The state classes are the same in both approaches.
 <!-- 28. Reactive Grouping Controls:
 get() also can takes the path to a control in our form. So you can specify the path, because you might have a nested form.
 Let's say we have a FormGroup() named userData. Remember: FormGroup() is not only used to be on the overall form(because the
-overall form is a form group), but you can still have FormGroup() inside of FormGroup() .
+overall form is a form group), but you can still have FormGroup() inside of FormGroup() . Because when you want to start
+writing the reactive approach, you use new FormGroup() on the property which would be the overall <form> element too.
+And we know when you have FormGroup() , you must pass it a JS object like the overall FormGroup() .
 So we can add some from controls inside of a form group. Like:
-this.signupForm = new FormGroup({
+EX)
+signupForm: FormGroup;
+
+ngOnInit() {
+  this.signupForm = new FormGroup({
       'userData': new FromGroup({
         'username': new FormControl(),
         'email': new FormControl(),
       }),
       'gender': new FormControl('male')
     });
+}
+
 So now we have a nested form. We need to reflect that into our HTML template, because right now if we look at our form, we have
 an error, which says we haven't a control called username on the overall form and that's true, we have nested that control in
 another form which is called userData. Also it can't find email control.
-So first of all we need to update our synchronization.  TODO till 1:29  -->
+So first of all we need to update our synchronization. Because as I said the former formControls which where in the first level
+of the object we passed to FormGroup({}), are now inside the second level. Or in other words they went inside another
+FormGroup({}) and they nested in another FormGroup({}) . So angular can't find them right now. So we must update the template
+of those form controls too.
+Important: We do that by nesting the form controls which are in a deeper level in .ts file, inside an element like a <div>,
+ and on that <div> which is the wrapper of those form controls, we place the formGroupName directive.
+ So now you can see some kind of the structure of directives in reactive approach.
+ formControlName directive to tell angular which prop in our typescript object which is representing the form, is related
+ to which input in html code. Also we got formGroupName directive to tell that it is the SAME form in the form. Because
+ we use that directive when we have a nested FormGroup() in another FormGroup() . For the value of formGroupName directive
+ we write the name of the nested FormGroup() in the .ts file.
+ Also we have [formGroup] directive which is used to specify the name of the overall FormGroup and usually this directive sits
+ on the <form> element.
+
+ But still by adding that formGroupName directive to the container element of inputs which are nested in another FormGroup()
+ in .ts code, we still got an error which says: Cannot read property 'valid' of null. Well, it is true because we have
+ get('<the name of form control>') in html template which aren't updated based on the nested controls in .ts file.
+ Because in get('<the name of form control>') in html template of the component, we are trying to get a formControl with the
+ given name in () of get() in that reactive form which the name of that form is in value of [formGroup] directive.But right now
+ we nested those formControls. So we need to update get() to point to the right path to that formControl. So instead of
+ get('username') we can say get('userData.username') which the userData is the name of FormGroup() which that formControl
+ is nested inside it. So you must structure your path in get() separated by dots.
+
+ So this was how we can REFLECT nesting of formControls in another FormGroups() which all of them are in overall FormGroup()
+ in html template.
+
+30. Reactive Arrays of Form Controls (FormArray):
+Let's say in our form, we want to allow the user to dynamically add formControls. So let's define a button in form:
+
+...
+<div formArrayName="hobbies">
+  <button type="submit" (click)="onAddHobby()">Add Hobby</button>
+
+  When you are using the getControls() method:
+  <div class="form-group" *ngFor="let hobbyControl of getControls(); let i = index">
+    <input type="text" formControlName="">
+  </div>
+
+  Alternatively when you are using the getter as I wrote in below in .ts code snippet you must output the array like this:
+  <div class="form-group" *ngFor="let hobbyControl of controls; let i = index">
+</div>
+...
+
+Now when the user clicked the button, we want to dynamically add a control to our form. So we want add that control to an array
+of controls, because the user might has multiple hobbies. So let's add a click listener on that button too.
+Now we need to add a new type of control but not formControl to our overall form and it would be an array of controls.
+So because we need an array of controls, the type of that control shouldn't be FormControl and also not FormGroup too. Instead
+the type of that control is FormArray. So let's say: new FormArray() for creating that control.
+In the array that we pass to FormArray() you can initialize the formControls you want to be in that FormArray by saying:
+new FormControl(), ... OR leave that array empty, so it means we haven't got any hobbies at the beginning.
+
+We need to cast this.signupForm.get('hobbies'); to say it is type of FormArray. So we can say <FormArray> at the beginning
+of that code and wrap the thing we want to be that type with ().
+The first arg of FormControl() is the default value of that control.
+
+.ts file:
+
+ngOnInit() {
+  this.signupForm = new FormGroup({
+      'userData': new FromGroup({
+        'username': new FormControl(),
+        'email': new FormControl(),
+      }),
+      'gender': new FormControl('male'),
+      'hobbies': new FormArray()
+    });
+}
+
+onAddHobby () {
+  //With this snippet we are creating and then adding the new form control but we won't able to see it. Because we need to
+  synchronize that new form control with our HTML code. Therefore we can use a directive named formArrayName.
+  So <div formArrayName="hobbies"> tells angular that SOMEWHERE IN that <div> , the hobbies FormArray will live.
+  Now let's create a <div class="form-group"> inside that div with that special directive, to output the array of
+  formControl hobbies and in that <div class="form-group"> we create an <input> which allows user to enter a new hobby-
+  FormControl .
+  Important: For synchronizing the FormArray with the html code, we need to use formControlName on each formControl which is
+   in that FormArray and we want to output that FormControl in html code and use the index of *ngFor for looping thorugh
+   those formControls. So we still needed to synchronize that <input> in *ngFor with dynamically created <input>. Now that
+   dynamically created input(s) , won't have a name(s) attr chosen by us, but it(or they) would be in that array. So the name
+   attr would be the index in that array, which is why we are retereiving it in let i = index; . So we can bind formControlName
+   by using property binding or [] . Because there, we are not passing a string to formControlName, but instead we are using a
+   variable or i in that case.
+   So now if we click on that button, it would add a new input and add in on html too. Now if you write something in those
+   new inputs and then submit the form and then console.log() that form(which we are doing in onSubmit() in value property
+   and then in hobbies prop, you can see the name of those new inputs which are some numbers and you can
+   see the value of those new inputs which the users submitted them.)
+  Now we need to loop through the controls which are in the array of formControls or in other words loop through the
+  FormArray. For this, we can create a method to get those controls which are in that array. So we created getControls() .
+
+  const control = new FormControl(null, Validators.required);
+  (<FormArray>this.signupForm.get('hobbies')).push(control);
+}
+
+getControls() {
+  return (<FormArray>this.signupForm.get('hobbies')).controls;
+}
+OR:
+get controls() {
+  return (this.signupForm.get('hobbies') as FormArray).controls;
+}
+
+This was how you can use FormArray() in reactive approach.
+Also don't forget to look at 29th text lecture for a bug in newere angular versions.-->
+<!--  -->
 
 <!-- 3. How Does Angular Interact With Backends:
 We want to store data to a database or fetch some data from db, when the app restarts or when a user revisits
@@ -3178,8 +3289,255 @@ Important: Because if we have error we shouldn't show the loading... message and
 
 16. Using Subjects for Error Handling:
 2) The second way of handling errors:
-This other way of handling errors could be nice in cases that
+This other way of handling errors could be nice in cases like when you send a http request and didn't subscribe to it in your
+component file. It's easy for us to react to an error in the component, if we do return the observable from the method that
+is used to send the request from service file and then in component file we subscribe to that method. Because with these, we can
+pass second arg which is a function for error handling to subscribe() . BUT what about when we have subscribing to the method
+which send the http request in the service? How we can handle error of those cases, which we aren't use subscribe() in the
+component(because the latter approach is the normal and usual approach)?
+Now obviously you could return the observable in the service too and simply subscribe in the component, instead of of subscribing
+to it right in the service because you might said component doesn't care about the result of this http request and this approach
+would not be wrong. But we can also use a subject instead of making the subscribe() in the component in this special case which
+is the component doesn't care about the result of http request.
+The subjects are useful if you have multiple places in your app that you want to handle the error in those places which are using
+the same method which is for sending http requests.
+So let's create a new instance of Subject() in the class of service file and that subject would give us a string eventually
+so: we can say <string> and when we are subscribing to that method in service file, we can give it a second arg and in that
+second arg which is a function, we can call next(<the error arg>.message) and after that we must subscribe() to that subject in
+all places we're interested in that error (because remember, the purpose of subjects is that we have multiple places).
+So in service file which is the place we are subscribing to the method which might get an error when sending http request and
+also there are some places which are using this method(so with one subject we can handle the errors of all of them) we can say:
+
+method() {
+  this.http.post or get or ... <eventually type!>(<'the url'>, <data of post or...>).subscribe(() => {...}, (error) => {
+    this.error.next(error.message);
+  });
+}
+
+So for example in one place we can say:
+
+error = null;
+private errSub: Subscription;
+
+this.errSub = this.postService.error.subscribe((errorMessage) => {
+  this.error = errorMessage;
+});
+
+ngOnDestroy () {
+  this.errSub.unsubscribe();
+}
+
+Also it's a good practice to unsubscribe, if you get rid of that component(we do that kind of stuff when the component is
+destroyed so let's implement onDestroy in that component). So therefore, we created a new pro which is named errSub and then store
+the result of using subscribe() to that new prop.
+
+17. Using the catchError Operator:
+No matter how you handle the errors, what ca be useful is a special operator that assists you for handling errors and that operator
+is named catchError .
+Now when you are using .pipe() on .subscribe() you can add this new operator to get the error object which can be received in
+() of the second arg of subscribe() and in () of catchError() you can get the error object which you can get in () of
+the second arg of subscribe() and in that, you can send data to analytics server and some generic error handling tasks and
+maybe not related to UI but it doesn't matter because we are in service file not component file. Also you can use Subject here
+too!But maybe you have some behind the scenes stuff that you want to do when an error occurs and in there, once you're done
+handling that error, you should pass it on though. So it defenitely needs to be able to reach subscribe() . So we now need to
+create a new observable which wraps that error and for doing that we need to import throwError from 'rxjs'.
+throwError is a function which will yield a new observable by wrapping an error. Or in catchError you can also throw a new
+custom error which YOU generated.
+Important: You need to RETURN the observable which is created by calling throwError() to be able to subscribe to that observable.
+ Because hey! You use subscribe() to subscribe to an observable, therefore if you don't return the result of throwError()
+ function which is a new observable, you would using subscribe() on nothing, because that series of fucntion wouldn't return
+ anything in that case.
+
+ The error handling of this example doesn't do anything but it's just an idea that shows you could consider catchError()
+ if you have some generic error handling task that you also want to execute in pipe() .
+
+EX)
+service file:
+fetchPosts () {
+  return this.http.get<{ [key: string]: Post }>(<'url'>)
+  .pipe(
+  catchError((errRes) => {
+    return throwError(errRes);
+  })
+  )
+  .subscribe();
+}
+
+18. Error Handling & UX:
+For making user to be able to get rid of the error message, we can create a button in template like:
+
+template file:
+<div *ngIf="error">
+<button (click)="onHandleError()">Okay!</button>
+</div>
+
+.ts file:
+onHandleError () {
+  this.error = null;
+  this.isFetching = false;
+}
+
+Now if you click on that button, the error message would gone but the Loading... message wouldn't.
+Important: So what we can do is to reset isFetching or isLoading property whenever we get an error too. Because even if we have
+ an error, we definitely not fetching data again
+ When we get an error from the observable, the observable wouldn't be completed yet! So in error handler function of subscribe()
+ we must set this.isLoading to false.
+ So even with an error, you aren't fetching data anymore, so the loading state definitely changed and therefore it should
+ reflected in the data and in the UI(template file) too.
+ Now by clicking that button, you wouldn't see loading... anymore.
+
+19. Setting Headers:
+Right now we're configuring our HTTP requests in posts.service.ts file.
+When you have a backend which requires authorization therefore would look for authorization header in the request we would send
+to server, we must set custom headers or if you want to set your own Content-Type or you need to attach your own custom header
+because your api which you are sending the request to, needs that custom header.
+So we can pass an object in second arg of .get() or third arg of .post() or ... and in that object you can configure bunch
+of stuff like headers. Now headers prop of that object, takes a HttpHeaders object and in () of HttpHeaders we pass a JS object,
+in object literal notation which you would write key-value pairs of your headers.
+Learn: So headers are key-value pairs.
+
+EX) service file:
+fetchPosts() {
+  return this.http.get<{ [key: string]: Post }>(<url>, {
+    headers: new HttpHeaders({
+      'Custom-Header': 'Hello'
+    }),
+    params: new HttpParams().set('print', 'pretty');
+  });
+}
 -->
+<!-- 20. Adding Query Params:
+It depends on the endpoint of API you're sending the request to, which query parameters are supported.
+You can see the previous code snippet example.
+HttpParams() works a bit different than HttpHeaders() . Because you must call set() method on HttpParams() .
+'print', 'pretty' will change the format, which firebase returns it's data.
+If you want to set multiple query params you can create a let variable like: (why let? Because we want to mutate that variable)
+We can repeat that append() method on params variable because the old params will be kept and the new ones will be added.
+
+const searchParams = new HttpParams();
+searchParams = searchParams.append('print', 'pretty');
+searchParams = searchParams.append('custom', 'key');
+
+21. Observing Different Types of Responses:
+Sometimes you need to access to entire response object not just extracted body data, sometimes you need to find out which
+status code was attached or you need to find out the response headers. In such cases you can change the way angular HttpClient
+parses the response .
+For example for post() , you can add the third arg but instead of specifying headers or params or ... we need to change observe
+prop of the third arg in post().
+
+observe: 'body' means that you would get that response data extracted and converted to JS object automatically.
+If you use, observe: 'response' , when you subscribe to that observable, in the arg of first function we pass to subscribe() ,
+you would get the FULL http response.
+
+So observe: 'body' will extract the response body and convert it to JS.
+Learn: observe: 'body' is the default value for observe.
+The ok property of the data response we get in first arg of subscribe() would be set to true, if status is in 2xx regeion. Like
+200 .
+SO with observe you can change the kind of data you get back.
+This was how you observe the response data. You can also observe sth different. For example when sending delete() request,
+in second arg of that method you can add an object and then say:
+observe: 'events'
+
+Learn: tap() operator allows us to execute some code without altering the response data. So basically we can do sth with
+ response but not disturb our subscribe() function and the args we passed to subscribe() as functions.
+ You don't need to return anything from tap() because it won't interupt the normal observable data flow. Because it just taps
+ in response then allows you to do sth and then automatically let the response pass through.
+
+So if you want to check if we did get back the response? Then you can just compare the type of event you get in tap with
+HttpEventType.<...> . So:
+... .pipe(tap((event) => {
+  if (event.type === HttpEventType.response) {
+    //So if the comparison returns true, that means the event we're receiving is actually our response, so we can access the
+    //response body
+    console.log(event.body);
+  }
+}))
+You can use the things that are available on events, to find out the request or response are in which phases. For example
+when using HttpEventType.sent we can say the request was sent not and ... .
+
+22. Changing the Response Body Type:
+You can also configure the response type in the configuration object of that HTTP request method.
+responseType: 'json' means the data in the body of your response is JSON and that tells angular that it should automatically
+parse that data in body and convert it to JS object.
+
+responseType: 'text' tells angular please don't try to convert the data in body to a JS object. So maybe you are getting some
+json but you don't want angular to parse it so we can use this option.
+The default responseType is 'json'.
+blob is used for files.
+
+23. Introducing Interceptors:
+Currently, whenever we want to send our HTTP requests and whenever we want to configure sth about these requests and responses
+like parameters, we're doing them on per request basis and oftentimes, that is the way it should be. Because every request
+might need different headers.
+
+Let's create a new interceptor by creating a file and there we want to attach some header to every request that is required for
+authentication on our back-end.
+Remember: Interceptor is basically an angular service.
+So let's create a file named, auth-interceptor.service.ts :
+export class AuthInterceptorService implements HttpInterceptor {}
+
+When you implemented the HttpInterceptor interface, this interface forces us to add a intercept() method in the class that
+implements that interface.
+intercept()() method gets 2 args
+
+EX)
+import {HttpInterceptor, HttpRequest} from '@angular/common/http';
+
+export class AuthInterceptorService implements HttpInterceptor {
+  intercept(req: HttpRequest<any>, next: HttpHandler) {
+    console.log('request is on it's way!');
+    return next.handle(req);
+  }
+}
+
+Learn: HttpRequest is a generic object. Therefore you can use angled brackets to basically inform angular about the type of
+ data that request will yield.
+ next is an object which will forward the request by calling a function on it. Because interceptor will basically run before
+ your request leaves your app.
+
+ Important: So intercept() will run right before the request is sent and right before the response is forwarded to subscribe() .
+  So intercept steps into the request flow and next is the object with a method you need to call in order to let
+  the request continue it's journey.
+
+
+So intercept() method will run right BEFORE the request leaves our application. So by saying:
+return next.handle(req); you let the request continue //TODO till 4:15
+-->
+
+
+<!-- RXJS youtube academind:
+An observable is basically a wrapper around some data source and data source typically means a stream of values.
+So we have that stream data which possibly is asynchronous, so async data source is possible multiple values over time and
+now we want to do sth whenever a new value of that data source occurs. This is the job of observer.
+So the observer is there, to execute some code WHENEVER we receive a new value or also an error or if the observable which
+we're observing reports that it's done. Therefore we need to connect the observer to observable. We do that by subscription.
+Subscription basically means with subscribe() method we tell the observable(or our wrapper around that stream of values) that
+someone is caring about those values or someone(observer) is listening to them.
+
+The observer can implement up to 3 methods. You can implement some of these methods that you want. Those methods are next() ,
+error() and complete() .
+Important: The next() method will be called by the observable whenever a new value is emitted, so whenever we receive
+ a new value.
+ The error() will be called, whenever the observable throws an error and the complete() will be completed when the observable
+ is done. So whenever we know that no more values will be emitted in the future.
+ But remember: Some observables will NEVER finish. For example if you wrap an observable around a click listener on a button.
+
+But how does observable know that it should call next() error() and complete() ?
+Well that is a kind of contract that the observable and observer sign through the subscription. The observable knows that
+it could fire a next() error() or complete() on an observer and on the other hand, observer knows that the observable will
+only fire one of these 3 methods. So you can easily implement them on the observer and react to them whenever they fired.
+
+So that is the invocation of those 3 methods which allows us to communicate and handle our data. But a better depiction is
+as stream.
+As I mentioned, an observable is a wrapper a stream of values and we can have one value which instantly occurs to have a
+synchrounos data stream or better say it's not a stream anymore, because it's async.
+
+Important: So the observer has 3 methods where we can handle any values in those methods.
+
+In subscribe() we pass the observer.
+The subscribe() method takes 2 possible args.
+-->
+
 
 <!-- Right now we are using some *ngIf directives to navigate around the app. So first we catch the clicked element which happened
  on <app-header> and then we store that $event variable which has the clicked element to a prop in app.component.ts file and then
