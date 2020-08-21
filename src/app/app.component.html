@@ -2918,7 +2918,184 @@ get controls() {
 
 This was how you can use FormArray() in reactive approach.
 Also don't forget to look at 29th text lecture for a bug in newere angular versions.-->
-<!--  -->
+<!-- 31. Reactive Creating Custom Validators:
+Let's say we have some usernames that we don't want the new users to use them. So let's create a new prop with an array for
+it's value:
+.ts code:
+forbiddenUsernames = ['Chris', 'Anna'];
+
+Now we must create our own validator which checks whether the username that the user entered is one of the forbiddenUsernames
+or not?
+We know a validator in the end, is just a function which gets executed by angular automatically when angular checks the validity
+of the formControl() and angular checks the validity of form control, whenever you change that control. Like changing the
+value of that control.
+So for creating a validator, let's create a method in the .ts file which we want to use that custom validator. Now a validator
+to work correctly, needs to receive an argument which is the control that validator should check and that control which the
+validator should check, is of type FormControl.
+A validator also needs to return sth in order to angular to be able to handle the return value correctly. This sth should be
+a JS object and in that object we should have ANY key (so any means we must use []) which that key can be interpreted as
+a string so we must have: [<something>: string] and the value of that key should be a boolean.
+In the body of this function, we must check if the value of the control which this validator would be used for that control
+is part of forbiddenUsernames array or not?
+So this function should return a JS object like:
+{nameIsForbidden: true}
+
+So nameIsForbidden would interpreted as a string.
+EX)
+forbiddenNames (control: FormControl): {[s: string]: boolean} {
+  if (this.forbiddenUsernames.indexOf(control.value) !== -1 ) {
+
+    /* The key name is up to you, but must be a string as I mentioned in return type of this function.
+     Also remember if control.value is NOT part of the array we are using indexOf() on it by checking control.value ,
+     it will return -1. So if this.forbiddenUsernames.indexOf(control.value) is true, it would return -1 . So we need to
+     make sure that we consider that too. So we must use !== -1 .
+     That means if we DO FIND control.value in forbiddenUsernames array, which in that case, the result of would be NOT -1.
+     Because it find that value in that array, it means the value was not valid. So we return the error object.
+     So if we type Anna in that control, the angular would give that control an invalid class.*/
+
+    return {'nameIsForbidden': true};
+  } else {
+    return null;
+  }
+}
+
+Important: If validation is successful, you HAVE TO return nothing or null and you shouldn't return for example in this case,
+ an object like {'nameIsForbidden': false}; which has the value for 'nameIsForbidden' of false. That's just how it works!
+ So in the case of the validation is good and successful and the value hasn't ane problem, we should return either null or
+ we can simply omit the return statement for that case. That strange way, is how you tell angular that the formControl is
+ valid.
+ So for creating your own validator, you must first receive the control which we want to validate it and then return the object
+ with error code(key name) in the case of invalid and in case of valid, we omit the return or just return null. For using this
+ validator:
+ Remember: For using that validator we shouldn't use () for calling that validator. So we don't execute it and we just write
+ the reference of that validator.
+EX)
+ngOnInit() {
+  this.signupForm = new FormGroup({
+      'userData': new FromGroup({
+        'username': new FormControl(null, [Validators.required, this.forbiddenNames.bind(this)]),
+        'email': new FormControl(),
+      }),
+      'gender': new FormControl('male')
+    });
+}
+
+Now if you go to website, you see an error. Which says: Cannot read property 'forbiddenNames' of undefined.
+This error has do sth with the way javascript handles this keyword. Because in forbiddenNames method we are accessing this
+keyword. Now that might be looked alright because we are in the class and we are accessing a property of that class with
+this keyword. But think about who is calling this.forbiddenNames ?
+We are not calling it from inside of that class, instead, angular will call it when it checks the validity of the control
+we are using that custom validator on it. So at that point of time, this keyword won't refer to our class. So we need to
+use .bind(this) in FormGroup() and for that validator.
+
+32. Reactive Using Error Codes:
+If you have an error on one filed of form, that field is invalid and therefore the overall form is invalid. Now if you somehow
+make the form submittable for testing purposes and then look at the submitted object of form, in root of the object, you
+see an errors prop which is null!
+But if you go to controls prop> <the control which had invalid value> > errors , you see nameIsForbidden: true .
+Which was our error code in the validator of that field. (We wrote Anna for the value of that field so that validator would
+return some error). So that is where angular ACTUALLY adds the error codes on individual controls and on their errors object.
+So we can take advantage of this and go to template code and add a span and in that span say:
+
+<span *ngIf="signupForm.get('userData.username').errors['nameIsForbidden']">This name is invalid</span>
+<span *ngIf="signupForm.get('userData.username').errors['required']">This field is required</span>
+
+With these, if we click in that input and don't type anything and then click outside of that input, we see the second
+<span> error message and if we type Anna we see the first <span>. -->
+<!-- 33. Reactive Creating a Custom Async Validator:
+Async validators are able to wait for a response before returning the error object or return null. So let's create a custom
+async validator.
+Important: In promise, we don't usually use return key word for returning sth, instead we use resolve() or reject.
+EX)
+forbiddenEmails (control: FormControl)>: Promise<any> | Observable<any> {
+  const promise = new Promise<any>((resolve, reject) => {
+    setTimeOut(() => {
+      if (control.value === 'test@test.com') {
+         resolve({'emailIsForbidden': true});
+      } else {
+        resolve(null);
+      }
+    }, 1500)
+  });
+
+  return promise;
+}
+
+Now for using this async validator:
+ngOnInit() {
+  this.signupForm = new FormGroup({
+      'userData': new FromGroup({
+        'username': new FormControl(null, [Validators.required, this.forbiddenNames.bind(this)], this.forbiddenEmails.bind(this),
+        'email': new FormControl(),
+      }),
+      'gender': new FormControl('male')
+    });
+}
+
+I used bind(this) there too, but in this case it isn't necessary because we aren't use this keyword in that async validator.
+
+So when a control is using an async validator, first the ng-invalid goes to ng-pending and then if the validate was successful
+it changes to ng-valid else, ng-invalid.
+
+34. Reactive Reacting to Status or Value Changes:
+So the status of an input or a control which has some async validators, first changed from ng-invalid to ng-pending and
+then ng-invalid or ng-valid .
+There is actually a form state which you can track it in general which you can use it on overall form or on each control,
+you have access to 2 observables which we can listen to them. They are: statusChanges and valueChanges:
+EX)
+this.signupForm.valueChanges.subscribe(
+  (value) => {
+    console.log(value);
+  });
+
+Important: The first callback of subscribe() , gets executed when new data arrives.
+With every keystroke, we can get the value of the form by providing an arg in first callback function of subscribe() and
+the value of form includes the value of controls inside of that form. So valueChanges gets fired whenever we type(or change sth)
+in any input of that form. Also you can call valueChanges on individual form control.
+
+this.signupForm.statusChanges.subscribe(
+  (status) => {
+    console.log(status);
+  });
+This would also get's triggered on every keystroke and checks the validity of each control (if it was used on a control) or
+overall form. So if you want to look closely what happening on your form or react to those changes, you can use these 2
+observables.
+
+35. Reactive Setting and Patching Values:
+Not only you can listen to updates that happen in your form by changing the values of the fields or ... , you can also update
+the form by yourself! Sth like template driven approach by using setValue and patchValue are there for you.
+So in this approach, you can also call setValue() on your whole form and pass it a JS object which in that object, we should
+resemble the object structure(but not exactly that object!) when you create the whole form in reactive approach.
+So because we have a FormGroup, here we also have an object inside the overall object.
+EX)
+ngOnInit() {
+
+
+  this.signupForm.setValue({
+    'userData': {
+       'username': 'Parsa',
+       'email': 'parsa@test.com'
+    },
+    'gender': 'male'
+    'hobbies': []
+  });
+}
+Now with this snippet, our form is pre-populated with these values.
+Also like TD approach, we have got patchValue() which is used for updating some parts of the form and not all of it. So if
+we use setValue() first and then patchValue() which in that have changed the username, the username at last would be the
+username that we specified in patchValue() but don't use this example!!!
+
+For resetting the form after submitting, you can place a method like onSubmit() on a button which is type submit and then say:
+obSubmit() {
+  this.signupForm.reset();
+}
+Learn: By doing this, all of the values in form would be reset. Even the default checked values in radio buttons. Don't want some
+ values like default checked radio buttons gone after submitting the form? You can pass an object to reset() method to just
+ reset those things in that object.
+
+37. [OPTIONAL] Assignment Solution: //TODO
+
+   -->
 
 <!-- 3. How Does Angular Interact With Backends:
 We want to store data to a database or fetch some data from db, when the app restarts or when a user revisits
@@ -3504,7 +3681,6 @@ So intercept() method will run right BEFORE the request leaves our application. 
 return next.handle(req); you let the request continue //TODO till 4:15
 -->
 
-
 <!-- RXJS youtube academind:
 An observable is basically a wrapper around some data source and data source typically means a stream of values.
 So we have that stream data which possibly is asynchronous, so async data source is possible multiple values over time and
@@ -3537,7 +3713,6 @@ Important: So the observer has 3 methods where we can handle any values in those
 In subscribe() we pass the observer.
 The subscribe() method takes 2 possible args.
 -->
-
 
 <!-- Right now we are using some *ngIf directives to navigate around the app. So first we catch the clicked element which happened
  on <app-header> and then we store that $event variable which has the clicked element to a prop in app.component.ts file and then

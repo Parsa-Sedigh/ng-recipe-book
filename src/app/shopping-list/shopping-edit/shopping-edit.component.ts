@@ -1,6 +1,7 @@
 import {Component, ElementRef, OnInit, ViewChild, EventEmitter, Output} from '@angular/core';
 import {Ingredient} from "../../shared/ingredient.model";
 import {ShoppingListService} from "../shopping-list.service";
+import {NgForm} from "@angular/forms";
 
 @Component({
   selector: 'app-shopping-edit',
@@ -8,8 +9,9 @@ import {ShoppingListService} from "../shopping-list.service";
   styleUrls: ['./shopping-edit.component.css']
 })
 export class ShoppingEditComponent implements OnInit {
-  @ViewChild('nameInput', {static: true}) nameInputRef: ElementRef;
-  @ViewChild('amountInput', {static: true}) amountInputRef: ElementRef;
+  /* I commented these 2 out, because we don't use local references on html template anymore. */
+  // @ViewChild('nameInput', {static: true}) nameInputRef: ElementRef;
+  // @ViewChild('amountInput', {static: true}) amountInputRef: ElementRef;
 
   /* In <> here, we're saying the type of this custom event which it's name is ingredientAdded, is an object which that object
   * has 2 properties, one property called name and it's type is string and other property is called amount and it's type is number.
@@ -30,10 +32,15 @@ export class ShoppingEditComponent implements OnInit {
   */
 
 
-  onAddItem() {
+  onAddItem(form: NgForm) {
     // const newIngredient = new Ingredient(this.nameInputRef.nativeElement.value, this.amountInputRef.nativeElement.value);
     // this.ingredientAdded.emit(newIngredient);
-    const newIngredient = new Ingredient(this.nameInputRef.nativeElement.value, this.amountInputRef.nativeElement.value);
+
+    //The value of form:
+    const value = form.value;
+
+    // const newIngredient = new Ingredient(this.nameInputRef.nativeElement.value, this.amountInputRef.nativeElement.value);
+    const newIngredient = new Ingredient(value.name, value.amount);
     this.slService.addIngredient(newIngredient);
   }
 

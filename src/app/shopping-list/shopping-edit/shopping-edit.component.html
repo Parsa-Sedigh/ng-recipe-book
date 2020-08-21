@@ -37,19 +37,38 @@
   Learn: When you create a custom event from the child of a parent component in order to make that parent able to get some data
    which that custom event which is defined in it's parent component, you must use @Output() on the property which is the name
    of that custom event.-->
+<!-- Don't use action attr on <form> in angular apps.
+We don't need local references in order to access the form inputs and also don't need to use the click() event on button
+of type="submit" in td approach or reactive.
+We can get rid of the local references and onAddItem() method in this html template because we want to use TD approach
+for handling the form. So we must use (ngSubmit) instead of that onAddItem() method for submitting the form.
+Now we need to access the form ITSELF and not the object representation of form in TD approach by placing a local reference on
+the whole form. Now we need to get access to the object representation of form instead of the DOM form element, so in order to
+do that, the value of that local reference on whole form must be ngForm. By adding that ngForm, we get access to the JS object
+representing the form which is created by angular behind the scenes and then pass that reference to the method which is
+the value of (ngSubmit) . Now we can pass that local reference which is equal to ngForm on overall form to the method that
+would be called when the form is submitted to get that object representation of form in that method which in this case is
+onAddItem() . So provide an arg in declaration of this method to receive that local reference which that arg would be type of
+NgForm. Because the local reference we are sending was = to ngForm.
+So this was how we can submit the form but we also need to register some controls. So let's add name attributes to each input
+in this form first. Also we need to add ngModel to register that input as a control in the TD approach. Remember to import
+ngModel from FormsModule too otherwise that won't available. Also the button which we click on it to submit the form MUST
+be of type submit. -->
 
 <div class="row">
   <div class="col-xs-12">
-    <form action="">
+    <form (ngSubmit)="onAddItem(f)" #f="ngForm">
       <div class="row">
         <div class="col-sm-5 form-group">
           <label for="name">Name</label>
-            <input type="text" id="name" class="form-control" #nameInput>
+<!--            <input type="text" id="name" class="form-control" #nameInput>-->
+            <input type="text" id="name" class="form-control" name="name" ngModel>
         </div>
 
         <div class="col-sm-2 form-group">
           <label for="amount">Amount</label>
-            <input type="number" id="amount" class="form-control" #amountInput>
+<!--            <input type="number" id="amount" class="form-control" #amountInput>-->
+            <input type="number" id="amount" class="form-control" name="amount" ngModel>
         </div>
 
         <div class="row">
@@ -57,7 +76,9 @@
             <!-- First approach: Send the local references as arguments.
             <button class="btn btn-success" type="submit" (click)="onAddItem(nameInput.value, amountInput.value)">Add</button>-->
             <!-- Second approach: Use @ViewChild('<name of local reference>', {static: true}) <property> -->
-              <button class="btn btn-success" type="submit" (click)="onAddItem()">Add</button>
+<!--              <button class="btn btn-success" type="submit" (click)="onAddItem()">Add</button>-->
+
+              <button class="btn btn-success" type="submit">Add</button>
               <button class="btn btn-danger" type="button">Deleter</button>
               <button class="btn btn-primary" type="button">Clear</button>
           </div>
