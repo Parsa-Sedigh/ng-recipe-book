@@ -23,7 +23,7 @@ export class ShoppingListComponent implements OnInit, OnDestroy {
   ingredients: Ingredient[];
   igChangeSub: Subscription;
 
-  constructor(private slService: ShoppingListService) { }
+  constructor(private slService: ShoppingListService) {}
 
   /* After using shopping-list service for this file, add button doesn't work anymore. WHY?
  * Because when we call getIngredients() , we only get a slice(or a copy) of ingredients array which is in shopping-list service.
@@ -51,6 +51,26 @@ export class ShoppingListComponent implements OnInit, OnDestroy {
     this.igChangeSub = this.slService.ingredientsChanged.subscribe((ingredients) => {
       this.ingredients = ingredients;
     });
+  }
+
+  onEditItem (index: number) {
+    /* Here we need to send this index to shopping-edit component which is the component that we need this index which is
+    the index of ingredient we clicked and we want to edit that ingredient. Recap: First we select the ingredient or to be
+    precise, the index of ingredient in this component and then send this index to the component which we need this index which
+    in that component, we need this index to find out which ingredient we are editing? and that component is shopping-edit.
+
+    For doing that, we can use a subject in the service and we can listen to that subject which is in the service, in the
+    shopping-edit component. So let's create a new subject in shipping-list service file. Which the name of that subject is
+    startEditing. Because the name also shows that we just clicked on the ingredient we want to edit and we don't edited it
+    yet.
+    Learn: Subject is a generic type and in the end the type of thing it would be have must be specified in <> of that
+     Subject.
+    Now we can use next() in this method to emit a new index. So with next(index) in this file, we pass the index of clicked
+    ingredient to the startEditing Subject. So now we can begin listen to that Subject in other places. So in other words,
+    in other places we can listen to this emitted index which is provided by that Subject. That other place is shopping-edit
+    component. So in ngOnInit() of that component, we can begin listening to that Subject and for listening to a subject
+    we must subscribe() to that subject.*/
+    this.slService.startEditing.next(index);
   }
 
   ngOnDestroy() {

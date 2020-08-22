@@ -37,7 +37,8 @@
   Learn: When you create a custom event from the child of a parent component in order to make that parent able to get some data
    which that custom event which is defined in it's parent component, you must use @Output() on the property which is the name
    of that custom event.-->
-<!-- Don't use action attr on <form> in angular apps.
+<!--2. TD Adding the Shopping List Form:
+Don't use action attr on <form> in angular apps.
 We don't need local references in order to access the form inputs and also don't need to use the click() event on button
 of type="submit" in td approach or reactive.
 We can get rid of the local references and onAddItem() method in this html template because we want to use TD approach
@@ -53,7 +54,33 @@ NgForm. Because the local reference we are sending was = to ngForm.
 So this was how we can submit the form but we also need to register some controls. So let's add name attributes to each input
 in this form first. Also we need to add ngModel to register that input as a control in the TD approach. Remember to import
 ngModel from FormsModule too otherwise that won't available. Also the button which we click on it to submit the form MUST
-be of type submit. -->
+be of type submit.
+
+3. Adding Validation to the Form:
+We can disable the submit button if the form is invalid by binding to disabled attr. So: [disabled]="!<a reference to the
+overall form>.valid" .
+
+Also currently we can write or choose negative numbers in type="number" input. So we must fix that. The easy way of making
+sure that the user only enters numbers greater than 0 is to use a built-in validator which is pattern validator. This validator
+will check the user input against a regex.
+Learn: The regular expression is a string, so because we are using [] on the attr which is a built in validator, we need to use
+ '' for regex which is inside "" . But because we have a string for the value of bindded property which is pattern,
+ we can omit the '' and therefore we need to omit the [] . So in this case we can use:
+ [pattern]="'^[1-9]+[0-9]*$'"
+ OR
+ pattern="^[1-9]+[0-9]*$"
+
+ So the second pattern, is the shortcut of using the property binding when we are bind to a string, where we don't have to
+ sue the [] on the property and '' for the value of that prop which is a string.
+ So now the negative values in input of type number which has that validator would make that input therefore that form invalid.
+ Also 0 itself is invalid. -->
+<!-- 4. Allowing the Selection of Items in the List:
+In onEditItem() we need the id of ingredient that we clicked to pass it to .ts file. So let's extract the index of each
+ingredient which is in that *ngFor by saying: let i =index in *ngFor and then pass it to that onAddItem() .
+
+5. Loading the Shopping List Items into the Form:
+
+7. Resetting the Form: -->
 
 <div class="row">
   <div class="col-xs-12">
@@ -62,13 +89,14 @@ be of type submit. -->
         <div class="col-sm-5 form-group">
           <label for="name">Name</label>
 <!--            <input type="text" id="name" class="form-control" #nameInput>-->
-            <input type="text" id="name" class="form-control" name="name" ngModel>
+            <input type="text" id="name" class="form-control" name="name" ngModel required>
         </div>
 
         <div class="col-sm-2 form-group">
           <label for="amount">Amount</label>
 <!--            <input type="number" id="amount" class="form-control" #amountInput>-->
-            <input type="number" id="amount" class="form-control" name="amount" ngModel>
+            <input type="number" id="amount" class="form-control" name="amount" ngModel required
+                   pattern="^[1-9]+[0-9]*$">
         </div>
 
         <div class="row">
@@ -78,7 +106,7 @@ be of type submit. -->
             <!-- Second approach: Use @ViewChild('<name of local reference>', {static: true}) <property> -->
 <!--              <button class="btn btn-success" type="submit" (click)="onAddItem()">Add</button>-->
 
-              <button class="btn btn-success" type="submit">Add</button>
+              <button class="btn btn-success" type="submit" [disabled]="!f.valid">{{ editMode ? 'Update' : 'Add' }}</button>
               <button class="btn btn-danger" type="button">Deleter</button>
               <button class="btn btn-primary" type="button">Clear</button>
           </div>

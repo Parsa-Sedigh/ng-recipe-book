@@ -1,4 +1,4 @@
-import { Directive, HostListener, HostBinding } from '@angular/core';
+import {Directive, HostListener, HostBinding, ElementRef} from '@angular/core';
 
 @Directive({
   selector: '[appDropDown]'
@@ -37,9 +37,20 @@ export class DropdownDirective {
 
   */
 
+  constructor(private elRef: ElementRef) {}
+
   @HostBinding('class.open') isOpen: boolean = false;
 
-  @HostListener('click') toggleOpen() {
-    this.isOpen = !this.isOpen;
+  /* If you want that a dropdown can also be closed by a click anywhere outside (which also means that a click on
+   one dropdown closes any other one, btw.), for that, I commented out the first toggleOpen(). Also remember: Placing
+   the listener not on the dropdown, but on the document.
+   */
+  // @HostListener('click') toggleOpen() {
+  //   this.isOpen = !this.isOpen;
+  // }
+
+  @HostListener('document:click', ['$event']) toggleOpen(event: Event) {
+    this.isOpen = this.elRef.nativeElement.contains(event.target) ? !this.isOpen : false;
   }
+
 }

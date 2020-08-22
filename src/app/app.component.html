@@ -3583,6 +3583,18 @@ fetchPosts() {
   });
 }
 -->
+<!-- Important: We can use Subjects to communicate between components. In one component we can emit new values in that Subject
+      by using .next(<the value>) and in other places we can subscribe() to that subject in order to listen to that subject.
+      Also remember when using Subjects, in the component that you are listening to that Subject or in other words you are
+      subscribing to that subject, you must clean the subscription to that Subject. In order to do that, we must create a
+      prop in that component which we are listening to that Subject and with that prop, we must assign the result of
+      subscribe() to that subject, to that created prop and then when the component is destroyed (in ngOnDestroy()) we must
+      use unsubscribe() on that prop which holds the subscription to that subject.
+
+Always place the built-in imports of angular to top of the other custom imports which import the created stuff by ourselves.
+
+SUPER IMPORTANT: YOU CAN USE TERNARY OPERATORS INSIDE {{}} (string manipulations).
+-->
 <!-- 20. Adding Query Params:
 It depends on the endpoint of API you're sending the request to, which query parameters are supported.
 You can see the previous code snippet example.

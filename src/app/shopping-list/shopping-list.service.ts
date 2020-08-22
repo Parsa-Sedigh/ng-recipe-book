@@ -11,9 +11,14 @@ export class ShoppingListService {
   /* This event emitter or now subject, is used to push the new information about changed ingredients from component A to B. */
   // ingredientsChanged = new EventEmitter<Ingredient[]>();
   ingredientsChanged = new Subject<Ingredient[]>();
+  startEditing = new Subject<number>();
 
   getIngredients () {
     return this.ingredients.slice();
+  }
+
+  getIngredient (index: number) {
+    return this.ingredients[index];
   }
 
   addIngredient (ingredient: Ingredient) {
@@ -36,6 +41,11 @@ export class ShoppingListService {
     }
     */
     this.ingredients.push(...ingredients);
+    this.ingredientsChanged.next(this.ingredients.slice());
+  }
+
+  updateIngredient (index: number, newIngredient: Ingredient) {
+    this.ingredients[index] = newIngredient;
     this.ingredientsChanged.next(this.ingredients.slice());
   }
 }
