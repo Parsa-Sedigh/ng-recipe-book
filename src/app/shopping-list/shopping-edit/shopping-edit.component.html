@@ -80,11 +80,15 @@ ingredient which is in that *ngFor by saying: let i =index in *ngFor and then pa
 
 5. Loading the Shopping List Items into the Form:
 
-7. Resetting the Form: -->
+7. Resetting the Form:
+
+8. Allowing the the User to Clear (Cancel) the Form:
+
+9. Allowing the Deletion of Shopping List Items: -->
 
 <div class="row">
   <div class="col-xs-12">
-    <form (ngSubmit)="onAddItem(f)" #f="ngForm">
+    <form (ngSubmit)="onSubmit(f)" #f="ngForm">
       <div class="row">
         <div class="col-sm-5 form-group">
           <label for="name">Name</label>
@@ -107,8 +111,12 @@ ingredient which is in that *ngFor by saying: let i =index in *ngFor and then pa
 <!--              <button class="btn btn-success" type="submit" (click)="onAddItem()">Add</button>-->
 
               <button class="btn btn-success" type="submit" [disabled]="!f.valid">{{ editMode ? 'Update' : 'Add' }}</button>
-              <button class="btn btn-danger" type="button">Deleter</button>
-              <button class="btn btn-primary" type="button">Clear</button>
+              <button class="btn btn-danger" type="button" (click)="onDelete()" [disabled]="!editMode"
+                      *ngIf="editMode">Delete</button>
+
+            <!-- We don't need to pass a reference of the overall form to onClear() method too! Because we have access to this
+             <form> in our .ts file by using @ViewChild()-->
+              <button class="btn btn-primary" type="button" (click)="onClear()" [disabled]="!editMode">Clear</button>
           </div>
         </div>
       </div>

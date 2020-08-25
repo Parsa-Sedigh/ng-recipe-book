@@ -94,11 +94,13 @@ export class ShoppingEditComponent implements OnInit, OnDestroy {
   }
   */
 
-  onAddItem(form: NgForm) {
+  /* I renamed this method from onAddItem to onSubmit. */
+  onSubmit(form: NgForm) {
     // const newIngredient = new Ingredient(this.nameInputRef.nativeElement.value, this.amountInputRef.nativeElement.value);
     // this.ingredientAdded.emit(newIngredient);
 
-    //The value of form:
+    /*Getting the value of the form when submitting the form(which this value is the updated value or the whole new ingredient):
+     */
     const value = form.value;
 
     // const newIngredient = new Ingredient(this.nameInputRef.nativeElement.value, this.amountInputRef.nativeElement.value);
@@ -110,9 +112,43 @@ export class ShoppingEditComponent implements OnInit, OnDestroy {
     if we are not in edit mode, by clicking the add button, it would create or add a new ingredient.
      this.slService.addIngredient(newIngredient); */
     if (this.editMode) {
-      this.slService.updateIngredient(this.editedItemIndex, this.editedItem);
+      this.slService.updateIngredient(this.editedItemIndex, newIngredient);
     } else {
       this.slService.addIngredient(newIngredient);
+    }
+
+    /* Initially we are not in edit mode, then we switch to edit mode, whenever we get the startEditing observable to fire.
+    * but we never switch it back to create mode. So after adding or updating, we set this.editMode = false; no matter of what
+    * the editMode was anything before. This code, makes sure we definitely leave the edit mode after submitting the form. */
+    this.editMode = false;
+    form.reset();
+  }
+
+  onClear () {
+    this.slForm.reset();
+    /* If the editMode prop was false before, it doesn't hurt to set to false again and if it was true, well we set it to
+    * false. */
+    this.editMode = false;
+  }
+
+  onDelete () {
+    /* In this method, we need to inform the service(because the ingredients are stored in service) that it should remove one
+    of the ingredients in the array. Also we need to clear the form in this method. Because if an item was loaded in the form,
+    we need to clear it because it was selected and by deleting it, it was gone so we need to clear the form too!
+    Because obviously: For deleting something, first we need to tell what is the item we want to delete, so we must already
+    selected it.
+    So let's create a method in service named deleteIngredient() .
+
+    We must call deleteIngredient() BEFORE clearing the form, because if we clear the form, we get out from the edit mode.
+
+    Also remember, when you want to delete an ingredient, you must first click on it. So let's add a *ngIf on delete button
+    and say this button would appear, IF we already selected an ingredient.
+    So if we click on delete button without already loading an item, angular would throw an error. So I added *ngIf to
+    delete button.*/
+    if (this.editMode) {
+      this.slService.deleteIngredient(this.editedItemIndex);
+      this.onClear();
+      this.editMode = false;
     }
   }
 

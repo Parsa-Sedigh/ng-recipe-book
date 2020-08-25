@@ -3095,7 +3095,54 @@ Learn: By doing this, all of the values in form would be reset. Even the default
 
 37. [OPTIONAL] Assignment Solution: //TODO
 
-   -->
+10. Creating the Template for the (Reactive) Recipe Edit Form:
+Let's create a form in recipe-edit component.
+
+11. Creating the Form For Editing Recipes:
+
+12. Syncing HTML with the Form:
+We created our form with reactive approach now we need to synchronize it to it's html code. For doing that, first we need to sth
+to app.module.ts file. So now in imports array of that file, we now not only need the FormsModule, but we also need the
+ReactiveFormsModule. So let's add this after FormsModule in that imports array. If you don't import that, synchronizing
+the created form in .ts with html code of that form will fail. Because we don't have access to the directives that are available
+by importing that module in whole app, when synchronizing in reactive approach.
+
+Important: First on overall <form> element, we need to add formGroup directive which must be used with [] .Because we need
+ to pass some data to that directive. So we need to bind it using property binding.
+By using that directive, we're telling angular that our overall form in html, is managed by ourselves and angular itself
+should not manage it instead it just should take our form. With that, we can now assign our own controls. So let's use
+formControlName directive on inputs. Also you can use prop binding with this directive too and then use single quotion marks,
+because the data we want to pass, is a simple string and it's not a property which in that case we MUST use property
+binding to be able to pass that property. But in this case we just need to pass a data which is just a string. So we can
+omit the [] or property binding and also omit the '' .
+
+Now you can use (ngSubmit)="<a method call>" to actually see the object that angular creates for us using reactive approach.
+Also remember you don't need to create a local reference for whole form and pass it to that method call because we have access
+to that form in .ts file already.
+
+14. Adding Ingredient Controls to a Form Array:
+Important: We can use for of loops for looping through arrays.
+
+15. Adding new Ingredient Controls:
+
+16. Validating User Input:
+Important: The pattern we use in <input> must be in "" , but the pattern we pass as value to Validators.pattern() must be
+ between // .
+
+Any button which hasn't type attr in form , can submit the form until we explicitly use type="button" on it.
+
+To using the validation of form, we can disable the submit button of form based on some condition of validation or ... .
+
+ng-invalid class would apply to anything which is invalid.
+
+Learn: You can apply some style an element when it has a class or some class by saying:
+ <the element>.<the class>.<class 2> {...}
+ EX)
+ input.ng-invalid {...}
+
+17. Submitting the Recipe Edit Form:
+
+-->
 
 <!-- 3. How Does Angular Interact With Backends:
 We want to store data to a database or fetch some data from db, when the app restarts or when a user revisits
@@ -3594,6 +3641,13 @@ fetchPosts() {
 Always place the built-in imports of angular to top of the other custom imports which import the created stuff by ourselves.
 
 SUPER IMPORTANT: YOU CAN USE TERNARY OPERATORS INSIDE {{}} (string manipulations).
+
+Important: By using .slice() without any args on the array you want to create a copy from it. So for getting a copy of array,
+ you can use .slice() on it which returns the copied array.
+
+Important: For deleting an element from an array, we can use splice() . splice() allows us to start at a specific point which
+ that specific point is the first arg and then say how many elements we want to delete in the second arg.
+ Also remember to call the splice on a copy of the
 -->
 <!-- 20. Adding Query Params:
 It depends on the endpoint of API you're sending the request to, which query parameters are supported.
@@ -3691,6 +3745,59 @@ Learn: HttpRequest is a generic object. Therefore you can use angled brackets to
 
 So intercept() method will run right BEFORE the request leaves our application. So by saying:
 return next.handle(req); you let the request continue //TODO till 4:15
+-->
+
+<!-- 2. How Authentication Works:
+When the user enters his credentials like email and password, then, that authentication data is sent to a server where the
+data is processed for validation. So we can't do that validation in the browser because all of the javascript code in
+browser is exposed to our users and therefore not stored securely and also the logic of that validation could be cahnged
+by users in browser as well too. So users can edit or even disable the javascript in the browser!
+So we can use authentication to create a nice user experience and to kind of show different parts of our application based
+on authentication status of the user BUT WE CAN'T CONTROL OR VALIDATE the authentication status in the browser and that has to
+happens in the server, so in a place where the users of our application can't do anything.
+Now if you think about a traditional web application, where the server would render pages for different URLs that you enter
+(so where the server would render different HTML pages for different URLs), you would work with a session. But remember, with
+angular, we built SINGLE page applications. That also means we decouple the front-end or the angular application from the back-end.
+So for the different pages we visit, those pages gets handled by angular and it's router and javascript in the browser takes over
+and re-renders pages or parts of pages as our user interface and also re-renders the current state of the user which requires
+that page.
+
+Remember that we still reach to back-end as you learned in HTTP requests, so we can still interact with a server but the server
+would be a restful API and therefore we'll not use a session because restful apis are stateless(the same applies for graphQl apis.)
+
+Important: So the core thing is that our back-end or our server will be an API. So our server would not be a server that renders the
+ HTML pages that we're on them and therefore sessions can't be used. Because our server doesn't care about the clients. Why
+ it doesn't care? Because the clients and server are decoupled from ea ch other, but remember, they can communicate with each other
+ through the HttpClient which angular offers us but besides that, there is no connection between server and client. In other words,
+ the server doesn't know about the clients and therefore, a session is not the solution about authentication. Because a session
+ would be stored on the server and as I said, the server doesn't care about the clients of our app.
+
+Instead, we will use a different approach, where in that approach the server will validate the user credential and if all of that
+credential is valid, the server will send the client a JSON web token typically.
+Learn: A token is a an encoded string which contains a lot of metadata and remember that token is encoded and not encrypted.
+ Which means this string could be unpacked and read by the client and remember, that token or encoded string is generated on the
+ server with a certain algorithm and a certain secret which only the server knows and only the server can validate incoming tokens for
+ their validity. Because the idea is that the client, which is our browser or our angular app, stores that token in some storage like
+ the local storage of the browser and attaches that token which server sent, to any request that thereafter of receving that token,
+ is sent to the server by the browser or angular app, which that request with atached token to it, needs to be authenticated by the
+ browser.
+So let's say we need to be authenticated, in order to be able to store recipes, then we need to attach that token in the header or
+in as a query parameter to the request we're sending to the server. So in this example, we must attach that token to store recipes
+request.
+The server is able to validate that token because the server itself! create that token with a certain algorithm and a certain
+private key which is only known to the server not the client. That is how a token is secured.
+Important: So we can't generate or edit the token, in the client. Because as soon as we do edit or generate a new one, it won't fit
+ the algorithm and private key (secret) which are used on the server and therefore, the server is able to determine the token is
+ valid or not and therefore the server can block access if the token of request was invalid.
+ So this is why tokens are secured. Again it is, because the server knows more than the client but we give the client one crucial
+ piece which is required to authenticate subsequent requests. But that crucial piece is given by the server and it can't be generated
+ on the client because of security reasons.
+
+So create token- store that token- attach that token to request and ... .
+
+3. Adding the Auth Page:
+
+
 -->
 
 <!-- RXJS youtube academind:
