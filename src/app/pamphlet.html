@@ -1,0 +1,648 @@
+<!-- 1. Introduction & Why Pipes are Useful:
+Pipes allows you to transform output. Also there are some pipes for different types of outputs and also we have some pipes
+for synchronous and asynchronous data.
+EX)
+Let's say we have a property in .ts file of component:
+username = 'Parsa';
+and we want to output in html file. So we can use string interpolation like:
+<p>{{ username }}</p>
+
+But let's say we decide we want to make the output all uppercase. BUT WE WANT TO DO THAT, ONLY WHEN WE WANT TO OUTPUT THAT PROP.
+So we don't want to change the property itself to uppercase because might we want to use it in other places not in uppercase.
+But you want to transform the way it is displayed once you render it to the screen in that file. So we can use the uppercase
+pipe:
+<p>{{ username | uppercase }}</p>
+
+2. Using Pipes:
+A pipe is only responsible for transforming the output, so the right places to use it, logically, is the template files.
+
+3. Parametrizing Pipes:
+We want to configure a pipe. For example you want to change the format of the output date which pipe date outputs those data.
+We can add a parameter to configure a pipe by adding a colon.
+date pipe can get a string parameter.For passing multiple parameters if the pipe supports those params we can say:
+pipe:<param1>:<param2>:...
+EX)
+<p>{{ server.started | date:'fullDate' }}</p>
+
+5. Chaining(combine) Multiple Pipes:
+The order of pipes when you have multiple pipes is crucial.
+Important: In this example, the uppercase pipe would applied to result of server.started | date:'fullDate' .
+EX)
+<p>{{ server.started | date:'fullDate' | uppercase }}</p>
+
+In the las example, if you first apply the uppercase pipe and then the date pipe on a date type, it would throw an error.
+Because you are using uppercase pipe which is for strings, on the date type. Because the order of pipes is crucial.
+
+6. Creating a Custom Pipe:
+Sometimes you need some functionality in pipes which isn't in built-in pipes. So let's create shorten.pipe.ts file.
+Now the shortenPipe class needs to have a special method to be usable as a pipe and whilst not strictly necessary, but it's
+a good practice to implement a certain interface in the class of custom pipe which by doing this, it requires you to implement
+a method in that class. The interface is PipeTransform and by implementing it, you need to create the transform method.
+Now the transform method NEEDS to receive the value which that value should get transformed in () of it. Also that method needs
+to receive a list of arguments. But for now, our pipe doesn't take arguments anymore because currently it doesn't need to take
+them. So I omit to receive any other arguments, so we only receive the value.
+
+Important: The transform method in a custom pipe class, always needs to return something because we always put something in
+ the pipe and then we get something out of the pipe. So the pipe class HAS TO return sth.
+ So you need to get sth out of the pipe otherwise that pipe won't work.
+Now in order to shorten that value, we can use substr() on the value we receive.
+
+Now in order to use that custom pipe, we need to go to app.module file and add it to declarations array.
+Learn: So just like components and directives you also need to add custom pipes to declarations array of app.module.ts .
+
+Now we also have to add a special decorator to the class of custom pipe.
+
+7. Parametrizing a Custom Pipe:
+It would be nice if we could allow the user to specify the number of characters which at that point, you want to shorten the
+value.Because right now we're always using characters as the limit and it is hard coded. Instead we can receive a second arg
+in transform method. Now the user can pass a parameter tou our pipe.
+So any args after value argument in transform method, is the args that the user can pass to the custom pipe.
+
+8. Example Creating a Filter Pipe:
+ng generate pipe or p <name of pipe>
+
+9. Pure and Impure Pipes (or How to fix the Filter Pipe):
+Angular is not rerunning our pipe on the data whenever this data is changes. So as soon as we change what we enter in that
+<input> which adds a server, for example even add a black space on that input and then remove that space, we would update the
+data that is shown or our pipe.
+So CHANGING the input or the data that is going into the pipe, will trigger a recalculation or in other words, will trigger the
+pipe to get applied to the data again.
+To be precise, updating or changing the data which that data is arrays or objects, won't trigger the pipes and this is a good
+behavior. Because otherwise, if this behavior of angular didn't exist, angular would have to rerun this filter pipe whenever
+ANY data on the page changes. This would be really bad because that behavior would costs a lot of performance and this is also
+the reason that why no built-in filter pipe exists in angular. Because you might say filtering is a common task. But because
+adding filter pipe would typically have a high performance costs if you want to enforce that pipe to being updated even if
+you are in filter mode, angular team didn't add such a pipe.
+
+Important: So by default just changing the value of filter pipe won't trigger it. But we can enforce it to work. So be aware
+ that the following change will make sure that whenever we change data on the page that the filter pipe exists, our filter pipe
+ would be recalculated. So this might lead to performance issues.
+
+So you can enforce to this pipe to be executed whenever the data changes, by adding a second property to the @Pipe() decorator
+and it's called pure and now you can set it to false. By default, the pure prop is true.
+Now with this, if you write stable and click the button, the servers would added.
+The reason is that the filter pipe gets recalculated whenever data changes. But leading to performance issues.
+
+So by saying pure: false , so now the pipe is not purely focusing on whether it's arguments was changed or not and therefore it
+also looks for whether anything on the page changes or not and then would be recalculated. By default (pure: true) the pipe
+will just focus on it's args and see if it's args was changed or not and then would recalculated.
+-->
+<!-- 10. Understanding the async Pipe:
+Let's say we have a HTTP request to a server and we get the data back from that server after 2 seconds and we are using that
+data in our template. So if you output the data which would be available in some time in future, you would get [object Object].
+and that is true because it is a promise and an a promise is an object. But after 2 seconds it would be some data not that
+[object Object] . But angular doesn't know about that because it doesn't watch our object and actually it doesn't see that
+object transforms to something else in future. It just know it's a promise, I'm done! and this behavior is good because it
+saves us performance.
+So we can use async pipe. This promise, recognize that we have a promise or observable which in the latter case it would
+subscribe to that observable automatically and when the promise is resolved or in case of observable it sees that the data
+is sent through subscription, that pipe will print that data to the screen.
+
+Learn: A promise is an object. -->
+
+<!-- 12. Using a Service for Http Requests:
+Right now, because we're using http requests in the component, our component is grown big. Also in the .ts file of our component,
+we have some code which is indirectly related to the user interface(the user interface is the job of the components). Yeah,
+of course we want to send a request when a button is clicked(clicking the button is related to UI!) and then we want to display
+the response of that request(this is also related to UI!). BUT! Transforming the result of that request has nothing to do with
+UI. So it's a good practice to outsource that work into services. So the services are part of your angular app that do the heavy
+work and the dirty work and your components are releatively LEAN and are mostly concerned with the template related work.
+Like isFetching property and ... .So let's create a service named posts.service.ts and in that file we export a class named
+PostsService . Now when you create a service you can make it available for whole app. There are 2 ways of doing that.
+1) You can add @Injectable() before exporting the class and in () of @Injectable() , you need to pass an object and in that
+object we set providedIn prop to 'root'. This approach is better.
+
+2) You could also add that service in providers array of app.module.ts file.
+In that service, we want to have our HTTP request methods and we only want to get the responses in our front-end or better say
+components. So therefore in this service, we can add a method named createAndStorePost() and in there we get title and content.
+Also we want to fetch or get our posts. So let's create fetchPosts() {} .
+Now we want the http for sending the requests right? So let's inject the HttpClient service in this new service and then save
+it in a property of this class. So we must add constructor() {} of this class and ...
+
+@Injectable({providedIn: 'root'})
+export class PostsService
+
+constructor(private http: HttpClient) {}
+
+createAndStorePost (title: string, content: string) {
+  const postData: Post = {title: title, content: content};
+  this.http.post<{name: string}>(<'url'>, <data we want to send via this http verb>)subscribe(() => {
+
+  });
+}
+
+fetchPosts () {
+
+}
+
+Now we can call the service methods in our component files to send the requests from components, based on some condition in
+template files. So in .ts file of that component, we need to include this newly created service inside () of constrcutor.
+
+.ts file of component:
+
+This onCreatePost() method would be called in template file based on some click by the user or ... and then when this onCreatePost()
+method is called, we call a method from service to send a http request.
+onCreatePost(postData: Post) {
+  this.postService.createAndStorePost(postData.title, postData.content);
+}
+
+onFetchPosts () {
+  //this.isFetching = true;
+  this.postsService.fetchPosts();
+}
+
+Remember: We don't need to create some props in the service file to store the results of subscribing to http requests. Because
+isFetching (which is used to indicate if the results of request are came back or not?) and loadedPosts props, clearly belonged
+to our component and not to the service file.
+
+Now the logic of sending the request is outsourced in a service. But when you have a prop for specifying whether the request is
+in progress or not, (like isFetching prop) , when you outsource the code for sending request, from the .ts file of component.
+We would have problem. Because right now, that prop is in .ts component file but the code of sending request is in service file.
+Because the component is where we use those props by displaying the incoming data from service and ... .
+Important: Now if you need to be informed about the http request process or in other words, get informed about if the results
+ was came back or the observable was complete or ... , we can return the sending request code which would return an observable
+ in the service file and then when we're calling that service method in the component file, we can use subscribe() on it.
+ Now why we are subscribing in the component file instead of subscribing the observable right in the service file and after
+ using http verb? Because we want to change some props which indicates the progress or state of the observable of that request
+ and we know these props are in component file. So we need to use .subscribe() in the component file and NOT in the service
+ file to get informed about the changes of loading and errors and ... .
+
+
+13. Services & Components Working Together:
+For fixing the props which aren't informed about the result of observable, we can use a subject in the service file and in that
+file, we can next our posts when we got them and then we subscribe() to that subject in the component file. But remember, subjects
+are good to use if we have multiple components which are interested in data of a http request. So a better approach in this case
+is to simply return the result of this.http.get() or ... in service file. So in service file, we don't use .subscribe() when
+sending http request, instead, in service file we just return the prepared observable which is because of http request. So
+currently the http request won't sent. Because as I mentioned, http requests are only sent when someone is interested in that
+request and just by saying: this.http.get(...); the request won't sent. Now by returning the observable of http request in
+service file, we can call that method which returns an observable in component file and then use .subscribe() on it to actually
+send the request and in component file, BEFORE subscribing to observable we can set this.isLoading to true
+
+So now, we moved the result handling of http requests into the component, but more heavy lifting or the part which is detached
+from the UI which is sending the request and the transformation of the resulted data with pipe() to the service file.
+This was the BEST practice when working with angular and http requests. So we moved the managing of loading state and calling the
+actual request and getting and managing the data which is the result of sending http request.Move these tasks to component file,
+therefore by doing that, be informed about the result of http request and state of pending the request by calling subscribe()
+on the observable and by using a prop which handles the state of loading of request.
+
+Sometime you can also subscribe() to observable pf http request right in the service file:
+So also remember: If your component DOESN'T CARE about the response of http request and about whether the request is done or
+not, in that case, there is no reason to subscribe() in the component file. For example when you create a post and want to post
+it to server.
+
+Learn: When you have some code duplication in 2 or more methods, you can outsource the duplicated code to a new PRIVATE method of
+ the calss which those methods with duplicated code are exist in that class and then call that private method in those methods.
+ We declared that new method, private, because we just need that method in THAT exact class and nowhere else. So why define it
+ public or protected?
+
+14. Sending a DELETE Request:
+When you have a method that is responsible for deleting a post, you can define the delete operation in service and then
+subscribe() to that method in service is component file. Why subscribing to it in component file and not in service file?
+Because for example maybe we want to get informed about our data was cleared or deleted to change the state of the traker
+properties or the properties which do other stuff.
+The first arg of subscribe() which is a function, will only executed if the observable was succeed.
+
+15. Handling Errors:
+When we're interacting with severs, things can go wrong, so we need error handling when interacting with servers. For example
+when you're sending a request with incorrect data, or the server is offline! or there's an error on the server or user is not
+authenticated for sending that request.
+
+Test mode when creating a database in firebase means read and write to this database is granted by everyone! Therefore no one
+needs to authenticate himself for doing these works.
+
+You can simulate that error condition by firebase! So in firebase go to database>rules . For doing that, you can set ".read" to
+false, there would be no condition which under that condition you would be allowed, not even if you are authenticated. Now
+if you send get request for fetching posts, you would get an error and when you get the error you see that we still have
+loading... !
+1) The first way of handling errors:
+Learn: The first arg of subscribe() would be executed when new data is came from server. The second arg os subscribe() would
+ trigger whenever we got an error and we can receive that error by providing an arg which gets the error.
+
+Now for error handling, in the .ts file of component, we can create a new property named error and set it to null initially and
+then in html template of that component we can add a <div> for showing errors and some elements in that <div> like <p> which
+show the error messages to the user. Now the idea is, we only show that <div> by using *ngIf like:
+<div class="danger" *ngIf = "error">
+  ...
+</div>
+Also you can add an errorMsg property to store the error message which is written by you or ... and then show it in template.
+If you need more information about the error you can dive deeper into the error object you're getting in the arg of second function
+of subscribe() .
+Also by doing this, we must check if we have NOT an error when showing the loading... message.
+Important: Because if we have error we shouldn't show the loading... message and instead we want to show the error <div>
+
+16. Using Subjects for Error Handling:
+2) The second way of handling errors:
+This other way of handling errors could be nice in cases like when you send a http request and didn't subscribe to it in your
+component file. It's easy for us to react to an error in the component, if we do return the observable from the method that
+is used to send the request from service file and then in component file we subscribe to that method. Because with these, we can
+pass second arg which is a function for error handling to subscribe() . BUT what about when we have subscribing to the method
+which send the http request in the service? How we can handle error of those cases, which we aren't use subscribe() in the
+component(because the latter approach is the normal and usual approach)?
+Now obviously you could return the observable in the service too and simply subscribe in the component, instead of of subscribing
+to it right in the service because you might said component doesn't care about the result of this http request and this approach
+would not be wrong. But we can also use a subject instead of making the subscribe() in the component in this special case which
+is the component doesn't care about the result of http request.
+The subjects are useful if you have multiple places in your app that you want to handle the error in those places which are using
+the same method which is for sending http requests.
+So let's create a new instance of Subject() in the class of service file and that subject would give us a string eventually
+so: we can say <string> and when we are subscribing to that method in service file, we can give it a second arg and in that
+second arg which is a function, we can call next(<the error arg>.message) and after that we must subscribe() to that subject in
+all places we're interested in that error (because remember, the purpose of subjects is that we have multiple places).
+So in service file which is the place we are subscribing to the method which might get an error when sending http request and
+also there are some places which are using this method(so with one subject we can handle the errors of all of them) we can say:
+
+method() {
+  this.http.post or get or ... <eventually type!>(<'the url'>, <data of post or...>).subscribe(() => {...}, (error) => {
+    this.error.next(error.message);
+  });
+}
+
+So for example in one place we can say:
+
+error = null;
+private errSub: Subscription;
+
+this.errSub = this.postService.error.subscribe((errorMessage) => {
+  this.error = errorMessage;
+});
+
+ngOnDestroy () {
+  this.errSub.unsubscribe();
+}
+
+Also it's a good practice to unsubscribe, if you get rid of that component(we do that kind of stuff when the component is
+destroyed so let's implement onDestroy in that component). So therefore, we created a new pro which is named errSub and then store
+the result of using subscribe() to that new prop.
+
+17. Using the catchError Operator:
+No matter how you handle the errors, what ca be useful is a special operator that assists you for handling errors and that operator
+is named catchError .
+Now when you are using .pipe() on .subscribe() you can add this new operator to get the error object which can be received in
+() of the second arg of subscribe() and in () of catchError() you can get the error object which you can get in () of
+the second arg of subscribe() and in that, you can send data to analytics server and some generic error handling tasks and
+maybe not related to UI but it doesn't matter because we are in service file not component file. Also you can use Subject here
+too!But maybe you have some behind the scenes stuff that you want to do when an error occurs and in there, once you're done
+handling that error, you should pass it on though. So it defenitely needs to be able to reach subscribe() . So we now need to
+create a new observable which wraps that error and for doing that we need to import throwError from 'rxjs'.
+throwError is a function which will yield a new observable by wrapping an error. Or in catchError you can also throw a new
+custom error which YOU generated.
+Important: You need to RETURN the observable which is created by calling throwError() to be able to subscribe to that observable.
+ Because hey! You use subscribe() to subscribe to an observable, therefore if you don't return the result of throwError()
+ function which is a new observable, you would using subscribe() on nothing, because that series of fucntion wouldn't return
+ anything in that case.
+
+ The error handling of this example doesn't do anything but it's just an idea that shows you could consider catchError()
+ if you have some generic error handling task that you also want to execute in pipe() .
+
+EX)
+service file:
+fetchPosts () {
+  return this.http.get<{ [key: string]: Post }>(<'url'>)
+  .pipe(
+  catchError((errRes) => {
+    return throwError(errRes);
+  })
+  )
+  .subscribe();
+}
+
+18. Error Handling & UX:
+For making user to be able to get rid of the error message, we can create a button in template like:
+
+template file:
+<div *ngIf="error">
+<button (click)="onHandleError()">Okay!</button>
+</div>
+
+.ts file:
+onHandleError () {
+  this.error = null;
+  this.isFetching = false;
+}
+
+Now if you click on that button, the error message would gone but the Loading... message wouldn't.
+Important: So what we can do is to reset isFetching or isLoading property whenever we get an error too. Because even if we have
+ an error, we definitely not fetching data again
+ When we get an error from the observable, the observable wouldn't be completed yet! So in error handler function of subscribe()
+ we must set this.isLoading to false.
+ So even with an error, you aren't fetching data anymore, so the loading state definitely changed and therefore it should
+ reflected in the data and in the UI(template file) too.
+ Now by clicking that button, you wouldn't see loading... anymore.
+
+19. Setting Headers:
+Right now we're configuring our HTTP requests in posts.service.ts file.
+When you have a backend which requires authorization therefore would look for authorization header in the request we would send
+to server, we must set custom headers or if you want to set your own Content-Type or you need to attach your own custom header
+because your api which you are sending the request to, needs that custom header.
+So we can pass an object in second arg of .get() or third arg of .post() or ... and in that object you can configure bunch
+of stuff like headers. Now headers prop of that object, takes a HttpHeaders object and in () of HttpHeaders we pass a JS object,
+in object literal notation which you would write key-value pairs of your headers.
+Learn: So headers are key-value pairs.
+
+EX) service file:
+fetchPosts() {
+  return this.http.get<{ [key: string]: Post }>(<url>, {
+    headers: new HttpHeaders({
+      'Custom-Header': 'Hello'
+    }),
+    params: new HttpParams().set('print', 'pretty');
+  });
+}
+-->
+<!-- Important: We can use Subjects to communicate between components. In one component we can emit new values in that Subject
+      by using .next(<the value>) and in other places we can subscribe() to that subject in order to listen to that subject.
+      Also remember when using Subjects, in the component that you are listening to that Subject or in other words you are
+      subscribing to that subject, you must clean the subscription to that Subject. In order to do that, we must create a
+      prop in that component which we are listening to that Subject and with that prop, we must assign the result of
+      subscribe() to that subject, to that created prop and then when the component is destroyed (in ngOnDestroy()) we must
+      use unsubscribe() on that prop which holds the subscription to that subject.
+
+Always place the built-in imports of angular to top of the other custom imports which import the created stuff by ourselves.
+
+SUPER IMPORTANT: YOU CAN USE TERNARY OPERATORS INSIDE {{}} (string manipulations).
+
+Important: By using .slice() without any args on the array you want to create a copy from it. So for getting a copy of array,
+ you can use .slice() on it which returns the copied array.
+
+Important: For deleting an element from an array, we can use splice() . splice() allows us to start at a specific point which
+ that specific point is the first arg and then say how many elements we want to delete in the second arg.
+ Also remember to call the splice on a copy of the array.
+-->
+<!-- 20. Adding Query Params:
+It depends on the endpoint of API you're sending the request to, which query parameters are supported.
+You can see the previous code snippet example.
+HttpParams() works a bit different than HttpHeaders() . Because you must call set() method on HttpParams() .
+'print', 'pretty' will change the format, which firebase returns it's data.
+If you want to set multiple query params you can create a let variable like: (why let? Because we want to mutate that variable)
+We can repeat that append() method on params variable because the old params will be kept and the new ones will be added.
+
+const searchParams = new HttpParams();
+searchParams = searchParams.append('print', 'pretty');
+searchParams = searchParams.append('custom', 'key');
+
+21. Observing Different Types of Responses:
+Sometimes you need to access to entire response object not just extracted body data, sometimes you need to find out which
+status code was attached or you need to find out the response headers. In such cases you can change the way angular HttpClient
+parses the response .
+For example for post() , you can add the third arg but instead of specifying headers or params or ... we need to change observe
+prop of the third arg in post().
+
+observe: 'body' means that you would get that response data extracted and converted to JS object automatically.
+If you use, observe: 'response' , when you subscribe to that observable, in the arg of first function we pass to subscribe() ,
+you would get the FULL http response.
+
+So observe: 'body' will extract the response body and convert it to JS.
+Learn: observe: 'body' is the default value for observe.
+The ok property of the data response we get in first arg of subscribe() would be set to true, if status is in 2xx regeion. Like
+200 .
+SO with observe you can change the kind of data you get back.
+This was how you observe the response data. You can also observe sth different. For example when sending delete() request,
+in second arg of that method you can add an object and then say:
+observe: 'events'
+
+Learn: tap() operator allows us to execute some code without altering the response data. So basically we can do sth with
+ response but not disturb our subscribe() function and the args we passed to subscribe() as functions.
+ You don't need to return anything from tap() because it won't interupt the normal observable data flow. Because it just taps
+ in response then allows you to do sth and then automatically let the response pass through.
+
+So if you want to check if we did get back the response? Then you can just compare the type of event you get in tap with
+HttpEventType.<...> . So:
+... .pipe(tap((event) => {
+  if (event.type === HttpEventType.response) {
+    //So if the comparison returns true, that means the event we're receiving is actually our response, so we can access the
+    //response body
+    console.log(event.body);
+  }
+}))
+You can use the things that are available on events, to find out the request or response are in which phases. For example
+when using HttpEventType.sent we can say the request was sent or not and ... .
+
+22. Changing the Response Body Type:
+You can also configure the response type in the configuration object of that HTTP request method.
+responseType: 'json' means the data in the body of your response is JSON and that tells angular that it should automatically
+parse that data in body and convert it to JS object.
+
+responseType: 'text' tells angular please don't try to convert the data in body to a JS object. So maybe you are getting some
+json but you don't want angular to parse it so we can use this option.
+The default responseType is 'json'.
+blob is used for files.
+
+23. Introducing Interceptors:
+Currently, whenever we want to send our HTTP requests and whenever we want to configure sth about these requests and responses
+like parameters, we're doing them on per request basis and oftentimes, that is the way it should be. Because every request
+might need different headers.
+
+Let's create a new interceptor by creating a file and there we want to attach some header to every request that is required for
+authentication on our back-end.
+Remember: Interceptor is basically an angular service.
+So let's create a file named, auth-interceptor.service.ts :
+export class AuthInterceptorService implements HttpInterceptor {}
+
+When you implemented the HttpInterceptor interface, this interface forces us to add a intercept() method in the class that
+implements that interface.
+intercept()() method gets 2 args
+
+This example is a setup that you need to use, to have some code which would run right before the request leaves the app but still
+let the request leave the app.
+EX)
+import {HttpInterceptor, HttpRequest} from '@angular/common/http';
+
+export class AuthInterceptorService implements HttpInterceptor {
+  intercept(req: HttpRequest<any>, next: HttpHandler) {
+    console.log('request is on it's way!');
+
+    /* By calling this, you let the request continue and you also should return the result of this to really let the request
+     continue.*/
+    return next.handle(req);
+  }
+}
+
+Learn: HttpRequest is a generic object. Therefore you can use angled brackets to basically inform angular about the type of
+ data that request will yield.
+ next is an object which will forward the request by calling a function on it. Because interceptor will basically run before
+ your request leaves your app.
+
+ Important: So intercept() will run right before the request is sent and right before the response is forwarded to subscribe() .
+  So intercept steps into the request flow and next is the object with a method you need to call in order to let
+  the request continue it's journey.
+
+So intercept() method will allow us to run the code which is inside it, right BEFORE the request leaves our application and
+right before the response is enter subscribe(). So by saying:
+return next.handle(req); you let the request continue it's journey.
+
+Now we need to provide this service but in a special way. So let's go to app.module.ts file and add the file of this interceptor
+service to providers array but in a JS object and not just add the name of that service. The first key of that object is
+provide and the value of that is HTTP_INTERCEPTORS which is a type in '@angular/common/http'. So this is the token which by it,
+that injection can later be identified by angular. So it will basically know that all of the classes that you provide on that
+token(so by using that indentifier), should be treated as HTTP interceptors and therefore should run their intercept() method
+whenever a request leaves the application.
+The second key is useClass key and for the value you must point to the interceptor class that you want to add as an interceptor.
+and the last prop is when you have more than one interceptor and you must inform angular about that fact which you must say
+angular please don't replace this interceptor with previous one, by adding multi: true . So this was just a dependency injection
+which is supported by angular that allows us to register a service under a different identifier(HTTP_INTERCEPTOR).
+
+With that, angular will automatically grab all of your http interceptors and run their intercept() method whenever request
+leaves the app. -->
+<!-- 24. Manipulating Request Objects:
+Important: The req object is immutable inside the intercept() method. So inside of that method you can't say:
+ req.url = '...';
+ that won't work and you would get errors.
+
+So if you want to modify the request, you have to create a new one.
+Inside of req.clone() , you can pass a JS object where in that object you can overwrite all of the core things.
+You can add completely new headers with headers: new ... OR if you want to keep the old headers, you simply do that by using
+req.headers.append() .
+
+So a typical use case for interceptor is that you receive the req via req arg and then you change it and then return the
+modified request not the original one.
+EX)
+intercept(req: HttpRequest<any>, next: HttpHandler) {
+  const requestModified = req.clone({
+    url: 'some-new-url',
+    headers: new ... OR req.headers.append('Auth', 'xyz')
+  });
+  return next.handle(requestModified).pipe(tap((event) => {
+    console.log(event);
+    if (event.type === HttpEventType.response) {
+      console.log('response arrived, body data: ');
+
+      //This would give the response body
+      console.log(event.body);
+    }
+  }));
+}
+
+Important: type: 0 is "request is sent" event.
+
+25. Response Interceptors:
+Learn: handle() returns an observable.
+
+next.handle() gives you an observable. Because I think it makes sense because in the end your request is an observable and you
+subscribe() to it. So next.handle(<request>) in the end, is the request with response in it and all of them are wrapped in
+an observable and therefore we can add pipe() which in the () of pipe() you can do sth with the response. Yeah response. Because
+the response would come back from server and first it can goes to pipe() and then subscribe() .
+We can use tap() to look inside the response here.
+Learn: In () of tap() we always get event.
+Remember that we can observe different kinds of responses with the angular HttpClient no matter what you chose there. But
+in interceptor, you always get an event, so you have the most granular access to the response you could possibly have.
+
+26. Multiple Interceptors:
+Let's create logging-interceptor.service.ts file:
+
+This interceptor is just responsible for logging. So you can comment the logging messages in prior interceptor.
+...
+intercept(req: HttpRequest<any>, next: HttpHandler) {
+  console.log('Outgoing request');
+  return next.handle(req).pipe(tap((event) => {
+    if (event.type === HttpEventType.response) {
+      console.log('Incoming response');
+      console.log(event.body);
+    }
+  }));
+}
+
+Important: So the return next.handle(req) is actually the response which is wrapped inside an observable.
+
+Important: The order which you provide the interceptors is very crucial. Because that would be the order which the interceptors
+ executed.
+app.module.ts:
+providers: [
+  {
+    provide: HTTP_INTERCEPTORS,
+    useClass: AuthInterceptorService,
+    multi: true
+  },
+  {
+    provide: HTTP_INTERCEPTORS,
+    useClass: LoginInterceptorService,
+    multi: true
+  }
+]
+-->
+
+<!-- 2. How Authentication Works:
+When the user enters his credentials like email and password, then, that authentication data is sent to a server where the
+data is processed for validation. So we can't do that validation in the browser because all of the javascript code in
+browser is exposed to our users and therefore not stored securely and also the logic of that validation could be cahnged
+by users in browser as well too. So users can edit or even disable the javascript in the browser!
+So we can use authentication to create a nice user experience and to kind of show different parts of our application based
+on authentication status of the user BUT WE CAN'T CONTROL OR VALIDATE the authentication status in the browser and that has to
+happens in the server, so in a place where the users of our application can't do anything.
+Now if you think about a traditional web application, where the server would render pages for different URLs that you enter
+(so where the server would render different HTML pages for different URLs), you would work with a session. But remember, with
+angular, we built SINGLE page applications. That also means we decouple the front-end or the angular application from the back-end.
+So for the different pages we visit, those pages gets handled by angular and it's router and javascript in the browser takes over
+and re-renders pages or parts of pages as our user interface and also re-renders the current state of the user which requires
+that page.
+
+Remember that we still reach to back-end as you learned in HTTP requests, so we can still interact with a server but the server
+would be a restful API and therefore we'll not use a session because restful apis are stateless(the same applies for graphQl apis.)
+
+Important: So the core thing is that our back-end or our server will be an API. So our server would not be a server that renders the
+ HTML pages that we're on them and therefore sessions can't be used. Because our server doesn't care about the clients. Why
+ it doesn't care? Because the clients and server are decoupled from ea ch other, but remember, they can communicate with each other
+ through the HttpClient which angular offers us but besides that, there is no connection between server and client. In other words,
+ the server doesn't know about the clients and therefore, a session is not the solution about authentication. Because a session
+ would be stored on the server and as I said, the server doesn't care about the clients of our app.
+
+Instead, we will use a different approach, where in that approach the server will validate the user credential and if all of that
+credential is valid, the server will send the client a JSON web token typically.
+Learn: A token is a an encoded string which contains a lot of metadata and remember that token is encoded and not encrypted.
+ Which means this string could be unpacked and read by the client and remember, that token or encoded string is generated on the
+ server with a certain algorithm and a certain secret which only the server knows and only the server can validate incoming tokens for
+ their validity. Because the idea is that the client, which is our browser or our angular app, stores that token in some storage like
+ the local storage of the browser and attaches that token which server sent, to any request that thereafter of receving that token,
+ is sent to the server by the browser or angular app, which that request with atached token to it, needs to be authenticated by the
+ browser.
+So let's say we need to be authenticated, in order to be able to store recipes, then we need to attach that token in the header or
+in as a query parameter to the request we're sending to the server. So in this example, we must attach that token to store recipes
+request.
+The server is able to validate that token because the server itself! create that token with a certain algorithm and a certain
+private key which is only known to the server not the client. That is how a token is secured.
+Important: So we can't generate or edit the token, in the client. Because as soon as we do edit or generate a new one, it won't fit
+ the algorithm and private key (secret) which are used on the server and therefore, the server is able to determine the token is
+ valid or not and therefore the server can block access if the token of request was invalid.
+ So this is why tokens are secured. Again it is, because the server knows more than the client but we give the client one crucial
+ piece which is required to authenticate subsequent requests. But that crucial piece is given by the server and it can't be generated
+ on the client because of security reasons.
+
+So create token- store that token- attach that token to request and ... .
+
+3. Adding the Auth Page:
+
+
+-->
+
+<!-- RXJS youtube academind:
+An observable is basically a wrapper around some data source and data source typically means a stream of values.
+So we have that stream data which possibly is asynchronous, so async data source is possible multiple values over time and
+now we want to do sth whenever a new value of that data source occurs. This is the job of observer.
+So the observer is there, to execute some code WHENEVER we receive a new value or also an error or if the observable which
+we're observing reports that it's done. Therefore we need to connect the observer to observable. We do that by subscription.
+Subscription basically means with subscribe() method we tell the observable(or our wrapper around that stream of values) that
+someone is caring about those values or someone(observer) is listening to them.
+
+The observer can implement up to 3 methods. You can implement some of these methods that you want. Those methods are next() ,
+error() and complete() .
+Important: The next() method will be called by the observable whenever a new value is emitted, so whenever we receive
+ a new value.
+ The error() will be called, whenever the observable throws an error and the complete() will be completed when the observable
+ is done. So whenever we know that no more values will be emitted in the future.
+ But remember: Some observables will NEVER finish. For example if you wrap an observable around a click listener on a button.
+
+But how does observable know that it should call next() error() and complete() ?
+Well that is a kind of contract that the observable and observer sign through the subscription. The observable knows that
+it could fire a next() error() or complete() on an observer and on the other hand, observer knows that the observable will
+only fire one of these 3 methods. So you can easily implement them on the observer and react to them whenever they fired.
+
+So that is the invocation of those 3 methods which allows us to communicate and handle our data. But a better depiction is
+as stream.
+As I mentioned, an observable is a wrapper a stream of values and we can have one value which instantly occurs to have a
+synchrounos data stream or better say it's not a stream anymore, because it's async.
+
+Important: So the observer has 3 methods where we can handle any values in those methods.
+
+In subscribe() we pass the observer.
+The subscribe() method takes 2 possible args.
+-->

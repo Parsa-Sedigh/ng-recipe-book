@@ -10,7 +10,7 @@
       <div class="row">
         <div class="col-xs-12">
           <button type="submit" class="btn btn-success" [disabled]="!recipeForm.valid">Save</button>
-          <button type="button" class="btn btn-danger">Cancel</button>
+          <button type="button" class="btn btn-danger" (click)="onCancel()">Cancel</button>
         </div>
       </div>
 
@@ -27,7 +27,7 @@
         <div class="col-xs-12">
           <div class="form-group">
             <label for="imagePath">Image URL</label>
-            <input type="text" id="imagePath" class="form-control" formControlName="imagePath">
+            <input type="text" id="imagePath" class="form-control" formControlName="imagePath" #imagePath>
           </div>
         </div>
       </div>
@@ -35,7 +35,7 @@
       <!-- Preview the image that the user pasted in previous input. -->
       <div class="row">
         <div class="col-xs-12">
-          <img src="" alt="Recipe image" class="img-responsive">
+          <img [src]="imagePath.value" alt="Recipe image" class="img-responsive">
         </div>
       </div>
 
@@ -64,7 +64,8 @@
             </div>
 
             <div class="col-xs-2">
-              <button class="btn btn-danger">X</button>
+              <!-- We need to say which ingredient should be deleted when we click on X button. -->
+              <button class="btn btn-danger" type="button" (click)="onDeleteIngredient(i)">X</button>
             </div>
           </div>
 

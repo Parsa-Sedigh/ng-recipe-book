@@ -117,11 +117,12 @@ export class RecipeService {
       [new Ingredient('buns', 1), new Ingredient('meat', 7)]),
   ];
 
+  recipesChanged = new Subject<Recipe[]>();
+
   // recipeSelected = new EventEmitter<Recipe>();
   // recipeSelected = new Subject<Recipe>();
 
-  constructor(private slService: ShoppingListService) {
-  }
+  constructor(private slService: ShoppingListService) {}
 
   getRecipes () {
     return this.recipes.slice();
@@ -138,5 +139,22 @@ export class RecipeService {
     * You could of course also create a had copy of the object with Object.assign() . */
     // return this.recipes.slice()[index];
     return this.recipes[index];
+  }
+
+  /* Because we have some duplication when using this.recipesChanged.next(this.recipes.slice()); in 2 methods, you can
+  * create a private method for this line of code and then call that method in these 2 methods. */
+  addRecipe (recipe: Recipe) {
+    this.recipes.push(recipe);
+    this.recipesChanged.next(this.recipes.slice());
+  }
+
+  updateRecipe (index: number, newRecipe: Recipe) {
+    this.recipes[index] = newRecipe;
+    this.recipesChanged.next(this.recipes.slice());
+  }
+
+  deleteRecipe (index: number) {
+    this.recipes.splice(index, 1);
+    this.recipesChanged.next(this.recipes.slice());
   }
 }

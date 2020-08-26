@@ -1,8 +1,9 @@
 import { Component, OnInit } from '@angular/core';
-import {ActivatedRoute, Params} from "@angular/router";
+import {ActivatedRoute, Params, Router} from "@angular/router";
 import {FormArray, FormControl, FormGroup, Validators} from "@angular/forms";
 
 import {RecipeService} from "../recipe.service";
+import {Recipe} from "../recipe.model";
 
 @Component({
   selector: 'app-recipe-edit',
@@ -20,7 +21,7 @@ export class RecipeEditComponent implements OnInit {
   editMode = false;
   recipeForm: FormGroup;
 
-  constructor(private route: ActivatedRoute, private recipeService: RecipeService) { }
+  constructor(private route: ActivatedRoute, private recipeService: RecipeService, private router: Router) { }
 
   ngOnInit(): void {
     /* This is a good place to retreive the id of route. */
@@ -129,7 +130,31 @@ export class RecipeEditComponent implements OnInit {
   }
 
   onSubmit() {
+    /* Here, we want to save the new recipe in array of recipes or update the existing one. So let's create 2 methods in service
+    * which are addRecipe and updateRecipe. So we must check if we are in edit mode or not. So with that, we can decide we must
+    * call which method of recipe.service .
+    * Currently, we can add and get a list of recipes, we return a copy with the slice() method in getRecipes() . Therefore,
+    * that is not the same array that we're using in our component as we're storing in this recipe service. So the recipes
+    * array that we're updating is not reflected in our components. So we can simply use the same approach as we did in
+    * shopping list service. So when we edit a recipe, we must reflect it in our website instantly.
+    * So let's create recipesChanged Subject and when we call addRecipe() in service file, we must use that created Subject and
+    * emit a new value and also in updateRecipe() we must do that too! Now we must go to where we show the recipes which is
+    * recipe-list component and in ngOnInit() of that component, we need to listen to that Subject. So whenever the Subject
+    * changed, that component will listen to those recipes changes and show them. So if we have some changes in recipes,
+    * in subscribe() to that Subject we know that we would eventually receive an array of recipes.
+    * Now when we update a recipe or add a new recipe, that recipe would be appear in somewhere else (recipe-list component) too!
+    * */
+    const newRecipe = new Recipe(this.recipeForm.value.name, this.recipeForm.value.description, this.recipeForm.value.imagePath,
+    this.recipeForm.value.ingredients);
     console.log(this.recipeForm);
+    if (this.editMode) {
+      this.recipeService.updateRecipe(this.id, newRecipe);
+    } else {
+      this.recipeService.addRecipe(newRecipe);
+    }
+
+    // this.router.navigate(['../'], {relativeTo: this.route}); OR we can call onCancel() to navigate away
+    this.onCancel();
   }
 
   get controls () {
@@ -148,6 +173,19 @@ export class RecipeEditComponent implements OnInit {
         Validators.pattern(/^[1-9]+[0-9]*$/)
       ])
     }));
+  }
+
+  onCancel () {
+    /* If we were editing a recipe, by clicking on cancel button, we would go to detail page and if we were in add mode,
+    * this method will take us to recipes page.
+    * But remember, for this to work, we need to tell angular what is our current route?
+    * So we need to include route: Route in constructor() which we already did that. So let's add the second arg of navigate()
+    * which is relativeTo. */
+    this.router.navigate(['../'], {relativeTo: this.route});
+  }
+
+  onDeleteIngredient (index: number) {
+    (<FormArray>this.recipeForm.get('ingredients')).removeAt(index);
   }
 }
 
