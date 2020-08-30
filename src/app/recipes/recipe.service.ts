@@ -108,14 +108,19 @@ import {Subject} from "rxjs";
 
 @Injectable()
 export class RecipeService {
-  private recipes: Recipe[] = [
-    new Recipe('italian spaghetti', 'some desc 1',
-      'https://www.cookingclassy.com/wp-content/uploads/2019/09/meatballs-21-600x900.jpg',
-      [new Ingredient('tomato', 2), new Ingredient('bread', 4)]),
-    new Recipe('delicious soup', 'some desc 2',
-      'https://cdn.loveandlemons.com/wp-content/uploads/2020/03/pantry-recipes-2.jpg',
-      [new Ingredient('buns', 1), new Ingredient('meat', 7)]),
-  ];
+  /* We have stored these recipes in server so we don't need them anymore. But I will initialize that prop with an empty array now.
+  So now when our app loads, we have no recipes in the beginning.
+  Important: The recipes MUST be an empty array which was initialize with an empty array from the beginning. Because we will
+   push some items into that property so it must be initialized.*/
+  // private recipes: Recipe[] = [
+  //   new Recipe('italian spaghetti', 'some desc 1',
+  //     'https://www.cookingclassy.com/wp-content/uploads/2019/09/meatballs-21-600x900.jpg',
+  //     [new Ingredient('tomato', 2), new Ingredient('bread', 4)]),
+  //   new Recipe('delicious soup', 'some desc 2',
+  //     'https://cdn.loveandlemons.com/wp-content/uploads/2020/03/pantry-recipes-2.jpg',
+  //     [new Ingredient('buns', 1), new Ingredient('meat', 7)]),
+  // ];
+  private recipes: Recipe[] = [];
 
   recipesChanged = new Subject<Recipe[]>();
 
@@ -144,6 +149,7 @@ export class RecipeService {
   /* Because we have some duplication when using this.recipesChanged.next(this.recipes.slice()); in 2 methods, you can
   * create a private method for this line of code and then call that method in these 2 methods. */
   addRecipe (recipe: Recipe) {
+    console.log(recipe);
     this.recipes.push(recipe);
     this.recipesChanged.next(this.recipes.slice());
   }
@@ -155,6 +161,15 @@ export class RecipeService {
 
   deleteRecipe (index: number) {
     this.recipes.splice(index, 1);
+    this.recipesChanged.next(this.recipes.slice());
+  }
+
+  setRecipes (recipes: Recipe[]) {
+    /* Overwrite the current recipes with recipes that we get in () of this method.
+     Also since we are changing the recipes here, we need to call recipesChanged Subject and call next() on it and pass it
+     a copy of new recipes, in order to inform all of the interested places that are interested in recipes, that we have got
+     new recipes.  */
+    this.recipes = recipes;
     this.recipesChanged.next(this.recipes.slice());
   }
 }

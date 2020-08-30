@@ -561,6 +561,130 @@ providers: [
 ]
 -->
 
+<!--  Course Project - Http:
+2. Backend (Firebase) Setup:
+We use realtime database and not cloud firestore in this project and for now choose start in test mode option, so with this
+option we have read and write access without being authenticated.
+Now we have created our database in that firebase project.
+
+3. Setting Up the DataStorage Service:
+First we need a place to make HTTP requests.
+Of course we could add (click) listeners to the save and fetch data elements in header component and then in component .ts
+file of that header, we could include the angular HTTP service and make the http request of that component in that .ts file of
+that component.
+But one disadvantage of that is that in that header component, we have the buttons but we don't have the data that we want
+to interact with it and the data we want to interact with, are recipes and those are managed in recipe service.
+Therefore the better place for making those requests is the recipe.service file.
+But let's create another route which is optional and create a new service for that in shared folder and that service is
+data-storage.service.ts . But this is optional because you could manage it in recipe service too but we created another service
+in order to really focus on that HTTP functionality. But handling the HTTP requests in recipe service would be fine because
+in the end in that case, we are interacting with recipes.
+
+Learn:
+ Theoratically, @Injectable() is optional and you don't need to add it to all of your services but it is required to add it
+ to the service which we inject another service to that service.
+ The alternative of adding the new created service in providers array of app.module.ts file is to use providedIn prop in
+ object that we pass to @Injectable()
+
+For using angular HTTP client service, first of all, we need to import HttpClientModule in app.module file and importing of
+this needs to be at top of the custom file imports in that app.module file. Now we need to add it to imports array of that
+file and before the imports of custom files in that imports array.
+
+These were crucial in order to unlock the HttpClient functionality in our application. With this, in any part of our app we can
+use angular HttpClient which means we can include that module in any service or file and in the file or service you want to
+use that module, you need to say:
+import { HttpClient } from '@angular/common/http';
+and then include it in () of constructor of that class.
+
+4. Storing Recipes:
+
+After sending the request for saving recipes, for the first time, firebase will create the recipes node. Because we have
+/recipes at the end of the request url.
+Important: Also firebase would create some cryptic keys for those data and it always does that when you POST data or
+ in other words when you attach ONE data piece at a time. But if you PUT data, firebase assumes that you know what you're
+ putting there and therefore if you wanted ids for the data that you PUT, you would have to generate and add ids on your
+ own. But in this case, we are fine with normal indexes like 0 and 1 and ...
+-->
+<!-- 5. Fetching Recipes:
+Learn:
+ A really crucial question when we are declaring the http request in service files, after declaring them, where we want to
+ subscribe() to those http requests to send it?
+ The answer is where are we interested in the response of the http requests?
+ For example when sending a get request to get the recipes, are we interested in response of that in header component ? NO!
+ Instead, in get or fetch recipes case, it would be nice to just subscribe in the data-storage service where in that service,
+ we already injected the recipes service. Because maybe we can do something with the recipe service like to push or to move our
+ fetched recipes where they are fetched in data-storage service into the recipes service which in the end if the place that
+ we manage all of our recipes like deleting them or ... .
+ So let's subscribe in data-storage service for fetching recipes.
+
+ IMPORTANT: When you have some things in a file, that we have got some other places which those other places are interested in
+  those things too, when those things were changed, all of those other interested places must be informed about the changes
+  that happen to those things. So in that case we can use Subjects in order to inform all of the interested places or files.
+  Also it's better to store or keep those interesting things like our data (an array of recipes which are in recipe service)
+  in ONE place. So we can call next() method on prop that is storing a Subject , in order to inform all of the places that are
+  interested in those recipes and in those places, we need to subscribe to that Subject. Also don't forget to unsubscribe() from
+  that Subject in ngOnDestroy() of those places or files.
+
+6. Transforming Response Data:
+Important: When you have a variable or a prop that is not initialized, and if you are pushing some elements to it in advance,
+ you MUST INITIALIZE that prop or variable with an empty array like [] . Otherwise you would get an error when trying to push()
+ some element into that array which says that empty variable or prop is undefined.
+
+Right now we have a bug. Right now, if you create a new recipe without any ingredients it's fine to have not any recipes.
+So generally our app works. But to prevent nasty bugs, when we fetch the recipes, it would make sense that we make sure we always
+have ingredients, even if it is just an empty array. But the data that we loaded in the end has some ingredients and that
+prop is not undefined. Because otherwise, if we try to directly interact with the ingredients, we could get errors and for that
+we can simply add a pipe when we are fetching the recipes. In map() operator if fetchRecipes() we get our recipes, but maybe
+among that recipes we have some recipes without any ingredient.
+The map() javascript method is for arrays and it receives an anonymous function which that anonymous function would executed
+for every element in that array.
+
+Learn: map() operator in rxjs, allows us to transform the data.
+
+7. Resolving Data Before Loading:
+Currently if we are in recipe detail page like /recipes/2 , and you reload, you would get an error.
+But the bigger problem is that when you reload, we tried to load the detail page for a recipe which that recipe doesn't exist!
+Because we're fetching our recipes from back-end and if we haven't pressed fetch data button before, well then we simply have
+no recipes.
+So it is simple! If we are currently in recipe-detail page and then reload the page, although we had the data of recipe we are
+currently seeing it before reloading, right now we can't see it. Because we need to fetch data and if we reload, the data
+that we were seeing by pressing on fetch data is gone! So accessing the details of a recipe is doomed to fail!
+
+One approach for fixing that would be to simply add a guard that prevents us from accessing recipes/2 or edit route which has
+an id encoded in it's url, when we have no recipes loaded(so after we refresh the page, we would have no recipes loaded and
+therefore the guard won't allow us to see that page after refresh) and instead would redirect us to /recipes for example.
+
+The second approach is to use a guard but another type of guard, which is a resolver.
+Learn: A resolver is essentially some code that runs BEFORE a route is loaded to ensure that certain data which the route that
+ is going to load depends on that data, is existing. Also in the resolver class, we need to implement Resolve interface and
+ Resolve is a generic interface which means we need to define which type of data will be resolved in the end by implementing
+ the Resolve interface, it forces us to add the resolve method which that method gets data about the route which is type of
+ ActivatedRoute which this route arg is a snapshot and also gets the current routing state which in that resolver we named it
+ state which is type of RouterStateSnapshot. From there we can for example get the id we are requesting and ... .But we want to
+ load all of the recipes anyway otherwise, things like editing them won't work correctly because we need to reinsert those recipes
+ into an array and ... .
+So let's add it in the recipes folder next to the recipes component and we name it recipes-resolver.service because in the
+end it is a normal service.
+
+Learn: We use @Injectable({providedIn: root}) to provide a service application-wide automatically and it doesn't matter that we
+ are injecting another service to that service or not. Because you can even add that decorator to services which we don't inject
+ other services to that service which has this decorator.
+
+8. Fixing a Bug with the Resolver:
+Currently if we fetch our recipes and then try to edit one of them, the changes are not saved! So whenever we edit a recipe and
+click the save button to save those changes, we go from .../recipe/<id>/edit to .../recipe/<id> . So we go from
+RecipeDetailComponent to RecipeEditComponent and we set a resolver to execute when we visit RecipeEditComponent and that
+resolver fetches the recipes from database and therefore because we din't save the edited recipe, the old recipes in database
+override the changed recipe and therefore the changes don't apply.
+The reason for that is that the resolver which is used(executed) WHENEVER we visit the routes that we used that resolver on those
+routes. That resolver fetches new recipes from server and therefore, it simply overwrites our existing recipes, including our
+changes to those recipes.
+
+The solution is to first check whether we do have recipes therefore don't fetch recipes from db OR we don't have recipes, therefore
+fetch from db.
+So let's inject RecipesService into the recipes resolver and then get the recipes from that injected service.
+-->
+
 <!-- 2. How Authentication Works:
 When the user enters his credentials like email and password, then, that authentication data is sent to a server where the
 data is processed for validation. So we can't do that validation in the browser because all of the javascript code in
@@ -611,7 +735,6 @@ So create token- store that token- attach that token to request and ... .
 
 3. Adding the Auth Page:
 
-
 -->
 
 <!-- RXJS youtube academind:
@@ -646,3 +769,12 @@ Important: So the observer has 3 methods where we can handle any values in those
 In subscribe() we pass the observer.
 The subscribe() method takes 2 possible args.
 -->
+
+<!--
+Important: when a router navigates to a route that renders the same component, the component isn't initialised again.
+ So for rendering that component again, we can declare the dynamic segments of the url in that component and change it reactively
+ by saying:
+ this.route.params.subscribe((params: Params) => {
+          this.user.id = params['id'];
+          this.user.name = params['name'];
+      });      -->

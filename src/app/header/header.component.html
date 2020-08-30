@@ -11,7 +11,7 @@
 <!--  With these <a> elements with href attr, if we click on these elements, it would reload our app because clicking on <a> elements
       would send a request to server. But we don't want our app to reload and we don't need onSelect() method to find out which one
       was selected by the user.
-<li><a href="#" (click) = "onSelect('recipe')">Recipes</a></li>-->
+            <li><a href="#" (click) = "onSelect('recipe')">Recipes</a></li>-->
 <!--        <li><a href="#" (click)="onSelect('shopping-list')">Shopping List</a></li>-->
         <li routerLinkActive="active"><a [routerLink]="['/recipes']">Recipes</a></li>
         <li routerLinkActive="active"><a [routerLink]="['/shopping-list']">Shopping List</a></li>
@@ -22,8 +22,8 @@
 
           <!-- Dropdown menu: -->
           <ul class="dropdown-menu">
-            <li><a style="cursor: pointer;">Save Data</a></li>
-            <li><a style="cursor: pointer;">Fetch Data</a></li>
+            <li><a style="cursor: pointer;" (click)="onSaveData()">Save Data</a></li>
+            <li><a style="cursor: pointer;" (click)="onFetchData()">Fetch Data</a></li>
           </ul>
 
         </li>

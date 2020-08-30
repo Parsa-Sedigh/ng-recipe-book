@@ -1234,7 +1234,7 @@ through our code.
  active route.
  Now by setting relativeTo prop to the current route which we got from ActivatedRoute arg which it's name and it's name of prop in
  this case is route, angular knows what our currently active route is.
- Learn: So we ar saying, we must navigate to other routes, relative to the current route we are on it.
+ Learn: So we are saying, we must navigate to other routes, relative to the current route we are on it.
 
 <button (click) = "onReload()">...</button>
 
@@ -1415,8 +1415,7 @@ export class UserComponent implements OnInit, OnDestroy {
 }
 
 rxjs package is not shipping with angular but angular is using this package.
-
- -->
+-->
 <!-- Passing QUERY parameters(and not parameters but QUERY parameters) and fragments:
 Query parameters are separated by question mark. For example: <domain>/parameters?queryParameters So like:
  localhost:4200/4/parsa?mode=editing&access=private
@@ -1459,7 +1458,7 @@ Query parameters are separated by question mark. For example: <domain>/parameter
  For adding those query parameters and fragments we use an object in navigate() method and in that object we use queryParams
  property.
  onLoadServer(id: number) {
-    this,router.navigate(['/servers', id, 'edit'], {queryParams: {allowEdit: '1', fragment: 'loading'}});
+    this.router.navigate(['/servers', id, 'edit'], {queryParams: {allowEdit: '1', fragment: 'loading'}});
   }
 
 15. Retrieving Query Parameters and Fragments
