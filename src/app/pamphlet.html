@@ -688,7 +688,7 @@ So let's inject RecipesService into the recipes resolver and then get the recipe
 <!-- 2. How Authentication Works:
 When the user enters his credentials like email and password, then, that authentication data is sent to a server where the
 data is processed for validation. So we can't do that validation in the browser because all of the javascript code in
-browser is exposed to our users and therefore not stored securely and also the logic of that validation could be cahnged
+browser is exposed to our users and therefore not stored securely and also the logic of that validation could be changed
 by users in browser as well too. So users can edit or even disable the javascript in the browser!
 So we can use authentication to create a nice user experience and to kind of show different parts of our application based
 on authentication status of the user BUT WE CAN'T CONTROL OR VALIDATE the authentication status in the browser and that has to
@@ -734,8 +734,81 @@ Important: So we can't generate or edit the token, in the client. Because as soo
 So create token- store that token- attach that token to request and ... .
 
 3. Adding the Auth Page:
+In this project, the auth page is available in an unauthenticated state. So the user doesn't need to be logged in to visit that
+auth page. Because forcing the user to being logged in, would defeat the purpose of authentication page.
+On the other hand, the recipes page should be locked down and should not be available if the user is not logged in and the same
+goes to the manage dropdown which is in the header. So that dropdown should only be shown if the user is logged in, because otherwise
+the user shouldn't interact with it. Or maybe we could but the actions in that dropdown shouldn't do anything, because that would
+send request so they need authentication.
+The shopping list should always be accessible.
+So let's create auth component.
 
+Learn:
+ In a component, we always export a class and then use @Component() on that class. Then in the () of @Component, we pass a JS
+ object and there, we must use selector prop and for value of that we use: 'app-<name of component>'.
+ Then we need to tell angular to where find the template of that component, by specifying the templateUrl prop and for value of
+ that, we pass the route to the html template of that component.
+ Now we need to go to app.module.ts file and add the new component to declarations array and also you must import it like:
+ import {<name of class of component>} from '.../<name of component>.component';
+ remember: In import code, don't use the .ts extension.
+
+Now let's make sure we can switch between login and signup mode.
+
+4. Switching Between Auth Modes:
+In order to switch between login and signup in the auth component, we need to manage the currently active mode. Therefore you could
+add a property like isLoginMode.
+So the idea is that you store if the user is currently is in login or in signup mode and you adjust the user interface and ... .
+
+5. Handling Form Input:
+
+6. Preparing the Backend:
+Our backend doesn't have to be firebase BUT it needs to offer endpoints which you can use them to create new users and to log users
+in, in order to get such a token. If your api supports that, then you can use that api. But we use firebase because it doesn't need
+to write backend code.
+
+So right now, go to authentication page in firebase and now, we have to setup a sign in method. Actually before do that let's go
+to realtime database page and then go to rules and in there if .read or .write are set to true, that means everyone can read(get the
+data in database) or write(store some data in database) our data in database. In other words, everyone can interact with our
+database currently.
+But this was required in the past because we had no authentication although it's not secure.
+But right now we need some authentication, so change the value of ".read" and ".write" to "auth != null"
+That will tell firebase that only authenticated users should be able to read and write data in our database.
+Actually we wanted to lock down everything(entire firebase database), if users are not authenticated.
+Now, if you fetch data from app, you get an error which is 401 error says you're not authorized.
+So let's go to firebase enable authentication so we can slowly add the logic to be able to visit our authenticated routes again.
+So in authentication page of firebase, click on sign-in method and choose email/password and JUST enable the top one.
+Now you got the built-in authentication which is enabled right now, where you can send requests to certain endpoints offered by
+firebase, to create users and to login users and you'll see the users in authentication page>users.
 -->
+<!-- 8. Preparing the Signup Request:
+Google firebase auth rest api and you can see the rest endpoints which firebase offers to you to creating users and logging users in.
+
+The firebase auth rest api is different than we used before with firebase database rest api.
+
+In the response of signing a user up, we get back idToken from firebase, therefore we don't need to sign in the user after sign in
+him up. Because we automatically get that token when the user signs up.
+
+So we need to send requests, therefore we need a service for sending HTTP requests for authentication. So in the auth folder
+let's create auth service. That service is also responsible for managing the the token of the user.
+
+The API_KEY of your firebase is in left navbar of firebase console and in that gear icon>project settings>Web Api Key .
+
+9. Sending the Signup Request:
+
+10. Adding a Loading Spinner & Error Handling Logic:
+For creating a loading spinner, let's create a folder in shared folder and call it loading-spinner and then create the loading-spinner
+component.
+
+11. Improving Error Handling:
+throwError which is in rxjs package, will create a new observable that wraps an error. Because RxJS always needs to return an
+observable and catchError operator, catches the error but you still need to return a new observable and that observable should
+still wrap that error so that it still ends up in second callback when you subscribe to that method which returns an observable.
+
+12. Sending Login Requests:
+-->
+<!-- 21. Adding an Auth Guard:
+We want to PREVENT the users from visiting /recipes if they are not authenticated.
+Learn: A route guard allows us to run some logic, right before a route is loaded  -->
 
 <!-- RXJS youtube academind:
 An observable is basically a wrapper around some data source and data source typically means a stream of values.
