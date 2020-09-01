@@ -33,8 +33,6 @@ export class DropdownDirective {
    prop = <initialValue>;
    this.<prop>= !this.<prop>;
    We are toggeling that property between it's values.
-
-
   */
 
   constructor(private elRef: ElementRef) {}

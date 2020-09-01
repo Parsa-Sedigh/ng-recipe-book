@@ -805,10 +805,55 @@ observable and catchError operator, catches the error but you still need to retu
 still wrap that error so that it still ends up in second callback when you subscribe to that method which returns an observable.
 
 12. Sending Login Requests:
+First let's make sure that we can send a request to the firebase login endpoint as well.
+
+When something is of type Observable, we know that an Observable is of type generic. So we need to specify the type of that
+variable or ... with Observable<The type that the observable will eventually yield> .
+
+13. Login Error Handling:
+Currently when a user wants to login, if his credentials are incorrect, we see [object Object] in error we write to the screen.
+So in login, we don't use the error handling that we use for signup. Therefore we are printing the whole error response that
+firebase sent for us for login.
+Now actually there would be nice to SHARE that error handling logic between both signup and login observables. So we can create
+a private method which is only used in auth.service file(hence it is a private method- it is private because we use that method
+ONLY in that file) which we named it handleError method.
+
+Also it doesn't matter to have the method that we used it BEFORE the method was declared in a class. It doesn't matter. So we can
+declare handleError() after we using it in a class.
+
+14. Creating & Storing the User Data:
+For storing the user data(or other specific data about sth) we can create a model for it.So in auth folder we can create user.model.ts
+file. Why in that folder?
+Because users are specific to auth component not other components.
+Important: A subject object is a generic type. So we have: variable or prop = new Subject<...>();
+
+Learn: tap() operator allows us to perform some action without changing the response. So it steps into that observable chain
+ but it doesn't stop it or block it or change it, it just run some code with the data(response of HTTP request in this case) you get
+ back from the observable.
+
+After doing this video which we create the user and signin or login him, then we need to redirect the user in the UI and also
+update the UI. When I said update the UI, I meant for example show a logout button and only show the manage button, if the user
+is logged in.
+So we must update the entire header, based on the auth status of the user.
+
+15. Reflecting the Auth State in the UI:
+Let's start by forwarding the user to a different route once the user is logged in and signed up. Now since we always want to
+
 -->
 <!-- 21. Adding an Auth Guard:
 We want to PREVENT the users from visiting /recipes if they are not authenticated.
-Learn: A route guard allows us to run some logic, right before a route is loaded  -->
+Learn: A route guard allows us to run some logic, right before a route is loaded and we can deny access if a certain condition
+ is not met. You can name the class of guards, like AuthGuard or like AuthGuardService, because they are technically services.
+ So we need to use @Injectable() , because the guards are basically services.
+ The class of guards, must implement CanActivate interface. So you also need to implement canActivate() method in class of that guard.
+ Also remember, the canActivate() method, needs to be implemented in a certain way. Because it has to receive the currently active
+ route(which we name it route) which is type of ActivatedRouteSnapshot. Also this method needs to get the router state
+ (we named it router) which is of type RouterStateSnapShot.
+ Also canActivate() HAS TO return either a boolean or a promise which eventually will yield a boolean(so we need to use generic
+ type for that) or an observable which will also eventually yield a boolean value.
+
+In canActivate() we want to return the status as we can derive it from our auth service. So let's inject the auth service in that
+guard.-->
 
 <!-- RXJS youtube academind:
 An observable is basically a wrapper around some data source and data source typically means a stream of values.
