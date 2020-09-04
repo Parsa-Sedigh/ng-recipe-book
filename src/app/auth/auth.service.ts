@@ -31,6 +31,16 @@ export class AuthService {
   and the idea is we emit a new user or in other words, we next a new user whenever we log in or when we logout(when we clear
   the user or in other words when user becomes invalid or token expierd). So in these cases we will emit a new user, which that
   user can be valid or invalid based on it's token.
+
+  We are managing our user through a subject. So this will inform all the places in application about when our user changes.
+  So we must set things up, so when the authentication status changes, the user subject must change too. So if the token of the
+  user expires, the user subject will emit a new value which that value is null, because the token is expired so the user now is
+  invalid so we emit null.
+
+  So if a subject is invalid, we can emit null or sth suitable .
+
+  Let's assume that the user subject is our source of truth and since the header component is always there in our application
+  it can subscribe to this user subject to update itself correctly based on the user status(authentication of user).
    */
   user = new Subject<User>();
 

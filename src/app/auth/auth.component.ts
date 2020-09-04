@@ -1,5 +1,6 @@
 import {Component} from "@angular/core";
 import {NgForm} from "@angular/forms";
+import {Router} from "@angular/router";
 import {Observable} from "rxjs";
 
 import {AuthResponseData, AuthService} from "./auth.service";
@@ -13,7 +14,7 @@ export class AuthComponent {
   isLoading = false;
   error: string = null;
 
-  constructor(private authService: AuthService) {
+  constructor(private authService: AuthService, private router: Router) {
   }
 
   onSwitchMode () {
@@ -101,6 +102,13 @@ export class AuthComponent {
           (resData) => {
             this.isLoading = false;
             console.log(resData);
+
+            /* Because we couldn't use a link in the template for navigating the user around, we need to use programmatic
+            navigation with navigate() method. In programmatic navigation, we want to navigate, once some action is done and
+            you don't want to navigate when a user clicks something but only when the user click the button AND the login is
+            done. Therefore we need to run some code before navigating so we need to navigate from the code and not with template.
+            Because in the code, we know the login is done not in the template.*/
+            this.router.navigate(['/recipes']);
           },
           (errorMessage) => {
             this.isLoading = false;

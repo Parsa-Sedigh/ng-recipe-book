@@ -14,7 +14,8 @@ Why using underscore and private for those args which would be props of that cla
 private, because the token should not be retrievable like that. Instead, when the user or you, as a developer, want to
 get access to the token, you should be required to do that(accessing the token) in a way that will automatically check the
 validity. So we don't need to use token directly to validate it manually. Instead checking the validity of token can be acheived
-a getter in this file.
+a getter in this file. The automatic way of getting the token and with checking validity is to declare a getter for token which
+checks the validity of it too.
 
 Learn:
  A getter looks like a function or a method, but you must access it like a property(so without it's parentheses). Why it is like

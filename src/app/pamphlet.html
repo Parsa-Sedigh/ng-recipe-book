@@ -689,7 +689,7 @@ So let's inject RecipesService into the recipes resolver and then get the recipe
 When the user enters his credentials like email and password, then, that authentication data is sent to a server where the
 data is processed for validation. So we can't do that validation in the browser because all of the javascript code in
 browser is exposed to our users and therefore not stored securely and also the logic of that validation could be changed
-by users in browser as well too. So users can edit or even disable the javascript in the browser!
+by users in browser as well. So users can edit or even disable the javascript in the browser!
 So we can use authentication to create a nice user experience and to kind of show different parts of our application based
 on authentication status of the user BUT WE CAN'T CONTROL OR VALIDATE the authentication status in the browser and that has to
 happens in the server, so in a place where the users of our application can't do anything.
@@ -838,8 +838,37 @@ So we must update the entire header, based on the auth status of the user.
 
 15. Reflecting the Auth State in the UI:
 Let's start by forwarding the user to a different route once the user is logged in and signed up. Now since we always want to
+redirect the user once we authenticate him, we can do it in two different places. We can do it in handleAuthentication()
+or we can do it in the component and inside of subscribe() but only in success of login! So you prefer redirecting in the
+component of inside of a service? Also if you need no data from either the service or the component and you have no strong reason
+for doing it one place or the other, it's up to you.
+Also you could argue that you want to keep your service file a bit cleaner and don't interact with the user interface in the
+service or in other words you don't want to directly influence the user interface and therefore you maybe don't want to
+interact with the router in the service file. So let's do the redirection in the component file. So let's include the router
+in that file.
 
+Right now if you are logged in and reload the page, the user object is gone and therefore we are not authenticated anymore, with
+just a reload!
+(When we have the user object, it means we are authenticated.)
+So currently if we are not authenticated, for example if we reload the app then all of the previous state is lost and we are not
+authenticated anymore, because the user object doesn't exist anymore in the memory after reloading the app. So we need to add
+some code to presist that user object when we reload the page.
+Right now, if we are not logged in we can still see recipes. So even we write some code that makes us can't go to recipes because
+we are not authenticated, we also want to even don't be able to see that recipes tab.
+
+So the next step will be that we must correctly reflect the current authentication state in the UI.
+So we can disable the recipes link if we are not logged in.
+Now we need to get the current authentication status of the user in the header component. In other words, we must find out
+do we have a user object with a valid token or not? and we also need to use that information to update the template correctly.
+
+So, right now, we manage our user object through a subject in auth service. So let's go there.
+
+Now we need to storing the users tokens and protecting certain routes(so we shouldn't visit them even if we directly enter the url-
+why directly? Because right now we don't show those routes in the UI if the user is not authenticated, but we also need to
+protect those routes). But before doing that, let's make sure we can use our token to fetch data because that's still not working,
+even we are authenticated, but why?? We will answer this in the next video.
 -->
+
 <!-- 21. Adding an Auth Guard:
 We want to PREVENT the users from visiting /recipes if they are not authenticated.
 Learn: A route guard allows us to run some logic, right before a route is loaded and we can deny access if a certain condition
@@ -889,7 +918,7 @@ The subscribe() method takes 2 possible args.
 -->
 
 <!--
-Important: when a router navigates to a route that renders the same component, the component isn't initialised again.
+Important: When a router navigates to a route that renders the same component, the component isn't initialised again.
  So for rendering that component again, we can declare the dynamic segments of the url in that component and change it reactively
  by saying:
  this.route.params.subscribe((params: Params) => {
