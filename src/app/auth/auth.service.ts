@@ -1,7 +1,7 @@
 import {Injectable} from "@angular/core";
 import {HttpClient, HttpErrorResponse} from "@angular/common/http";
 import {catchError, tap} from "rxjs/operators";
-import {Subject, throwError} from 'rxjs';
+import {BehaviorSubject, Subject, throwError} from 'rxjs';
 import {User} from "./user.model";
 
 /* I added ? for registered prop because the response data from firebase always doesn't have that property(for example when sending
@@ -40,9 +40,11 @@ export class AuthService {
   So if a subject is invalid, we can emit null or sth suitable .
 
   Let's assume that the user subject is our source of truth and since the header component is always there in our application
-  it can subscribe to this user subject to update itself correctly based on the user status(authentication of user).
-   */
-  user = new Subject<User>();
+  it can subscribe to this user subject to update itself correctly based on the user status(authentication of user).*/
+  user = new BehaviorSubject<User>(null);
+
+  /* Instead of using this prop, we can use a different approach which has a different kind of subject.
+  token: string = null; */
 
   constructor(private http: HttpClient) {
   }

@@ -868,6 +868,79 @@ why directly? Because right now we don't show those routes in the UI if the user
 protect those routes). But before doing that, let's make sure we can use our token to fetch data because that's still not working,
 even we are authenticated, but why?? We will answer this in the next video.
 -->
+<!-- 16. Adding the Token to Outgoing Requests:
+Right now we have a problem. Why our authentication status ignored when we try to fetch or save data?
+Because JUST WE KNOW THAT WE ARE AUTHENTICATED AFTER A SUCCESSFUL LOGIN and we have our token somewhere in the user object, but
+firebase doesn't know that we are authenticated and we are not attaching that token into the outgoing requests and therefore
+firebase has no chance of understanding that we have a valid token(because we are authenticated, we have a valid token).
+Important: So we need to add that token to the outgoing request to let firebase know about we have a token and therefore we are
+ authenticated. So for doing that, we need to manipulate our outgoing HTTP requests like fetching and storing data which
+ need the user to be authenticated.
+Hence we need to look into the data-storage.service, where we have fetchRecipes and storeRequests and those requests need to
+we attach our token(the token we are storing in the user object which is a subject in our auth service) to them.
+
+For doing that, let's inject auth.service to data-storage service and then we need to get access to the user object in those
+request declarations. Now we could set up a subscription to the user object BUT we don't care about every change to the user object
+which is a subject(because we knew we subscribe() to a subject in order to get informed about the changes of that subject).
+Instead when we try to send store or fetch recipes http requests, we just want to get the token of the currently authenticated
+user and we don't want to have an ongoing subscription to the changes of user object which is a subject.
+Hence in the auth service, we now should also store the token or the user object in a way that we can access it through different
+means. So not through a subject which is great for reactively updating the user interface but we also have a way of on-demand
+fetching of the user object. Now there are couple of ways of acheving that, since we are only interested in the token of user
+object, we could just store the token in the prop of AuthService which initially is null and eventually(after
+the user authenticated- So we can set the type of that prop to string, although initially it's null) will hold a string eventually
+and we will set the token to token prop whenever we also emit a new user subject.
+That approach would be possible and wouldn't be wrong but we can also use a different type of subject.
+So let's change the type of user subject to BehaviorSubject.
+Learn: BehaviorSubject behaves just like the other Subject, which means we can call <the prop which holds the subject>.next() to
+ emit a new value and we can subscribe to it to get informed about new values which that subject emits.
+ The difference is that BehaviorSubject gives subscribers immediate access to the previously emitted value even if they haven't
+ subscribed at that point of time which that previous value was emitted.
+ This means we can get access to the currently active user even if we only subscribe after that user has emitted.
+ So this means when we fetch data and therefore we need the user token at that point of time, even if the user logged in before
+ that point of time which will be the case, we get access to that latest user object. Therefore, BehaviorSubject needs to be
+ initialized with a starting value.
+
+Now in data-storage service, now we can reach out to the auth service and get the currently active user and then for example in
+fetchRecipes we don't want to make an ongoing subscription to the user by subscribing BehaviorSubject but still we need to
+subscribe to get the user object.
+So to make sure we only get the user once and thereafter we're done, of course we could manually immediately call unsubscribe()
+when we subscribe() to the user BehaviorSubject like:
+this.authService.user.subscribe().unsubscribe();
+OR you can use .pipe() and then use take() rxjs operator.
+
+So we didn't want to get informed about every change of user object, we just wanted to on-demand fetching of the user object.
+Learn: take(1) means we only want to take one value from that observable(which in this case is user BehaviorSubject) and thereafter
+ it should automatically unsubscribe. So this also manages the subscription for us and gives us the latest user and then
+ unsubscribes and we won't get future users because we just want to get user object on demand when fetchRecipes() is called.
+ So when fetchRecipes() is called we get the latest(because we are using a kind of subject, although we are not actually getting
+ it everytime the user object changes, in this method) user and then we unsubscribe from that BehaviorSubject.
+ If you used an ongoing subscription we would get the all of the users when they changes even when we don't need them. Because
+ we just want to get the current user(if we have of course!) when user wants to fetch recipes. So we subscribe to that
+ source but by using take(1) operator.
+
+Important: A subject is great for reactively updating the UI.
+
+17. Attaching the Token with an Interceptor:
+We can use the same logic we used in fetchRecipes() in the storeRecipes() too. But since we are using the angular HttpClient
+we could also use another feature offered by that client because what we do there in fetchRecipes() and storeRecipes() is we
+manipulate all those outgoing requests in the same way and we can use an interceptor.
+
+Important: We can use an interceptor to manipulate our requests instead of manually copy some logic for some requests multiple
+ times.
+
+So let's add that interceptor in auth folder, because it is used for attaching a token for authenticating the user for the
+firebase(the user is authenticated by app but he still needs to be authenticated for sending requests to firebase.)
+So that interceptor is an authentication-related interceptor it must goes to auth folder.
+
+Now, after creating the interceptor class, in @Injectable() don't add an object with providedIn prop for it, because we will
+provide this service differently than others and we have to provide it in such a way angular understands it.
+
+The intercept() method needs to get 2 arguments- req which is a generic type of HttpRequest. That generic type means which type of
+data that request will return eventually. Also we need to provide the next arg of type HttpHandler.
+-->
+<!-- 18. Adding Logout:
+ -->
 
 <!-- 21. Adding an Auth Guard:
 We want to PREVENT the users from visiting /recipes if they are not authenticated.
