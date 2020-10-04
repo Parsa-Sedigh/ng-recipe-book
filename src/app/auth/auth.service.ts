@@ -1,8 +1,10 @@
 import {Injectable} from "@angular/core";
 import {HttpClient, HttpErrorResponse} from "@angular/common/http";
+import {Router} from "@angular/router";
 import {catchError, tap} from "rxjs/operators";
 import {BehaviorSubject, Subject, throwError} from 'rxjs';
 import {User} from "./user.model";
+import Timeout = NodeJS.Timeout;
 
 /* I added ? for registered prop because the response data from firebase always doesn't have that property(for example when sending
 a post request for sign up a user, the response doesn't have that prop but when signing in a user the response does have that prop.
@@ -42,11 +44,12 @@ export class AuthService {
   Let's assume that the user subject is our source of truth and since the header component is always there in our application
   it can subscribe to this user subject to update itself correctly based on the user status(authentication of user).*/
   user = new BehaviorSubject<User>(null);
+  private tokenExpirationTimer: Timeout;
 
   /* Instead of using this prop, we can use a different approach which has a different kind of subject.
   token: string = null; */
 
-  constructor(private http: HttpClient) {
+  constructor(private http: HttpClient, private router: Router) {
   }
 
   signup(email: string, password: string) {
@@ -182,6 +185,117 @@ export class AuthService {
 
     /* We are emitting the new user which is currently logged in user, in this app. */
     this.user.next(user);
+    this.autoLogout(expiresIn * 1000);
+    localStorage.setItem('userData', JSON.stringify(user));
+  }
+
+  logout (): void {
+    /* This line will make sure that our entire application, now treats the user as unauthenticated, because that't the logic we
+    used everywhere and now we should update our UI and also our interceptor will not work correctly anymore for requests which
+    require an authentication(they need a user object to send requests), which is exactly the behavior we want because we can't
+    authenticate ourselves anymore.
+
+    Also we can redirect after logging out. But we won't write the code for it, in the component file but in the service file and
+    in logout method. Because whilst we have one place for logging in users into the application which that place is auth component,
+    there are multiple possible sources which could lead to logout, it's not just he header component, which leads to logout, but
+    we will also add some logic to automatically log us out, once the token expired and therefore we need to redirect in the service
+    file and not in a component. So let's inject router.
+    So we implemented the redirect or navigate logic in the service file not in the component where we use this logout method of
+    service file, because no matter where we logout, we must always redirect in the logout. So we implemented it in the service
+    file which is kinda a general file than a component file.
+
+    So in opposite of login, which it's redirection is implemented in auth.component file which is just a component in our whole
+    app, we must implement the logic of redirection for logout in service file which is a file that can be injected anywhere in
+    it's module, in opposite of auth component which can't be included in any other file, because we don't need it do be injected.
+    Because it's logic doesn't needed in anywhere else. */
+    this.user.next(null);
+    this.router.navigate(['/auth']);
+    localStorage.removeItem('userData');
+    if (this.tokenExpirationTimer) {
+      clearTimeout(this.tokenExpirationTimer);
+    }
+    this.tokenExpirationTimer = null;
+  }
+
+  autoLogin (): void {
+    /* Learn: JSON.parse will take a sting which must be in JSON format and convert it to a javascript object.
+    In this case, we are converting the JSON string of that object back to a javascript object but not back into our User model
+    object. Because that object(userData) won't have that token getter which we defined for the objects of User model.
+
+    Also when you convert back that JSON string to a JS object, the  _tokenExpirationDate prop, would be of type string and not
+    Date and we need to convert it to a Date type manually to make that converted object be the same as an object of User model.
+    Because when you used JSON.stringify(user) , the _tokenExpirationDate prop which was type of Date was converted to string.
+    So here, we need to MANUALLY convert it to Date type.
+
+    Also here, when you want to create a new instance of User model, we pass _token and we don't use token getter of the
+    converted user object, because that converted user object even doesn't have that getter because it isn't an instance of
+    User model anymore and therefore it hasn't that getter. So we can pass that _token prop of converted user object without
+    using getter which doesn't exist anymore.(I repeatedly say "converted user object" instead of user object, because after
+    converting that user object to JSON string, the getters would destroyed!) and also the type of Date, gets converted to type of
+    string.
+
+    We can't save methods in JSON snapshot(when converting an object by using JSON.stringify() - so getters and setter would be
+    destroyed in the converted JSON format of that object an also the converted JS object from that JSON string) and therefore it
+    only contains the props we had in there which are those 4 props.
+
+    RECAP: So we have to convert the user object which was logged in or signed up, into a string with JSON format(in
+    handleAuthentication() method.). Then in this method, we can get that JSON string object and convert it back to a js object
+    and also convert the props of this converted object into the types we had before like Date.*/
+
+    const userData: {
+      email: string,
+      id: string,
+      _token: string,
+      _tokenExpirationDate: string
+    } = JSON.parse(localStorage.getItem('userData'));
+    if (!userData) {
+      return;
+    } else {
+      const loadedUser = new User(userData.email, userData.id, userData._token, new Date(userData._tokenExpirationDate));
+
+      /* Now because we converted that JS object into a User model instance, we need to use that getter for getting the
+      _token.
+      Now we need to check if this user has a valid token, so if loadedUser.token is true-ish and we know because right now we
+      are working with an instance of User model, the .token is a getter and in that getter we are checking the expiration date to
+      is expired or not. Now if that condition is true, we want to emit the loadedUser as the currently authenticated user.
+
+      Now let's go to to a place in our application that runs early in our app lifecycle and it is app.component because that
+      component runs as soon as the app starts and use ngOnInit() there and call autoLogin() method in there.
+      So we want when the user enters the app, autoLogin() method gets called.*/
+      if (loadedUser.token) {
+        this.user.next(loadedUser);
+
+        /* We need to calculate the remaining time before the token would expired */
+        const expirationDuration = new Date(userData._tokenExpirationDate).getTime() - new Date().getTime();
+        this.autoLogout(expirationDuration);
+      }
+    }
+  }
+
+  /* This is a method that sets a timer and manages that timer for automatically logging the user out.
+  The callback we pass to setTimeout() as the first arg, would be called immediately after the duration we pass as second arg.
+
+  Now when the user logs out , we need to clear that timer. Because if we logout automatically then there's no problem, because
+  the timer was expired and we were logged out, so the timer was cleared. But if we logout manually, we also call logout() and we
+  still have that timer in the background which calls logout() again in a later time after our logout of app.
+  But we don't want to do that. So if a user logs out on his own, then the lifetime of the user's token ends anyways(because we make
+  the user object to null in logout() method) and therefore we should also clear the token expiration timer when we logout manually.
+  So let's store that timer in a prop of this class and the name of that is tokenExpirationTimer. Why we created a prop for that?
+  Because we need to access that timer from other parts of this class and not just this method. Now use this prop in logout()
+  and in there you must check if we have that timer or not because it maybe was expired. Also we need to assign null to that
+  timer after logout and after clearing it, if we had it or not, doesn't matter. So I placed it outside of if statement.
+
+  Now where we must call this autoLogout() ?
+  Basically whenever we emit a new user object to our application, which we do it in handleAuthentication() and also in autoLogin() .
+  So let's call this method in those places after we emit a new user object. Because, well, we must emit a new user object to
+  be able to delete it after a while.
+
+  Also note that in autoLogout() we expects expirationDuration to be in milliseconds.
+  */
+  autoLogout (expirationDuration: number) {
+    this.tokenExpirationTimer = setTimeout(() => {
+      this.logout();
+    }, expirationDuration);
   }
 }
 

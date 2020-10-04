@@ -17,6 +17,14 @@ validity. So we don't need to use token directly to validate it manually. Instea
 a getter in this file. The automatic way of getting the token and with checking validity is to declare a getter for token which
 checks the validity of it too.
 
+In other words, we set the _token and _tokenExpirationDate to make the developer! get those properties from a getter and not
+easily get them by using user._token or ... . But why?
+Because we want to check some stuff in that getter, so we make those props private to force developer and also to check the
+expiration of that token. So we still can get those properties but when we get them we get them by checking some conditions too.
+So that's why we make them private and define them a getter.
+Important: If you have a private prop and you want to get it from outside of that class, you have to define a getter for it! If you
+ don't you can just use that prop inside of that file and you can't get it from outside of that class
+
 Learn:
  A getter looks like a function or a method, but you must access it like a property(so without it's parentheses). Why it is like
  that?

@@ -1,0 +1,32 @@
+/* A traditional styles for a standard backdrop: */
+.backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, .75);
+  z-index: 50;
+}
+
+/* A traditional styles for an alert box which is always on the screen until the user closes it(because it uses position: fixed;).
+Also we gave this top: 30vh; to not be top of the screen and has some space between itself and top of the screen.
+
+We gave this class a left of 20vw and width of 60vw because 20 + 60 + 20 = 100vw to make it center horizontally.
+
+We don't define a height for this class, because we want the height of it gets determined by the content of the element that this
+class sits on it.*/
+.alert-box {
+  position: fixed;
+  top: 30vh;
+  left: 20vw;
+  width: 60vw;
+  padding: 16px;
+  z-index: 100;
+  background-color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .26);
+}
+
+.alert-box-actions {
+  text-align: right;
+}

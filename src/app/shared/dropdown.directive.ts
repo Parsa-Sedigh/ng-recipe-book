@@ -35,9 +35,11 @@ export class DropdownDirective {
    We are toggeling that property between it's values.
   */
 
-  constructor(private elRef: ElementRef) {}
+  constructor(private elRef: ElementRef) {
+  }
 
-  @HostBinding('class.open') isOpen: boolean = false;
+  @HostBinding('class.open')
+  isOpen: boolean = false;
 
   /* If you want that a dropdown can also be closed by a click anywhere outside (which also means that a click on
    one dropdown closes any other one, btw.), for that, I commented out the first toggleOpen(). Also remember: Placing
@@ -47,7 +49,8 @@ export class DropdownDirective {
   //   this.isOpen = !this.isOpen;
   // }
 
-  @HostListener('document:click', ['$event']) toggleOpen(event: Event) {
+  @HostListener('document:click', ['$event'])
+  toggleOpen(event: Event) {
     this.isOpen = this.elRef.nativeElement.contains(event.target) ? !this.isOpen : false;
   }
 

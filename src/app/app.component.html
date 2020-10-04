@@ -1346,6 +1346,7 @@ export class UserComponent implements OnInit{
       with a different parameters in url.)
       So for first initialization of this component, we can use snapshot property but for later reloads of this page, we are
       using params property directly on route instead of using on snapshot and then route prop.*/
+
       this.user = {
          id: this.route.snapshot.params['id'],
          name: this.route.snapshot.params['name'],
@@ -2319,8 +2320,7 @@ Important: When an observable throws an error or gets canceled due to an error, 
  Learn: So we added ngModel and name attr for the input we want it as a control of that form.
   <select> element is another type of html input elements.
 
- Now we want to see key-value pairs which shows us what user inputs into each input.
- -->
+ Now we want to see key-value pairs which shows us what user inputs into each input.-->
 <!-- 6. TD Submitting and Using the Form:
 Now let's make our form submittable, therefore we can see what users entered. For doing that, we create a method like onSubmit()
 and this method will be triggered whenever the form is submitted by user. Now where we must call this method?

@@ -1,0 +1,10 @@
+<!-- Backdrop is the thing in behind or is the background of overlay that block the access to the rest of the page and it ensures
+that the focus is on the alert box and that box is the <div> after <div class="backdrop">. We give that second div, a class of
+alert-box instead of alert to not interfere with the alert class which is provided by bootstrap.-->
+<div class="backdrop" (click)="onClose()"></div>
+<div class="alert-box">
+  <p>{{ message }}</p>
+  <div class="alert-box-actions">
+    <button class="btn btn-primary" (click)="onClose()">Close</button>
+  </div>
+</div>

@@ -1,9 +1,16 @@
+<ng-template appPlaceholder></ng-template>
+
 <div class="row">
   <div class="col-xs-12 col-md-6 col-md-offset-3">
 
-    <div class="alert alert-danger" *ngIf="error">
-      <p>{{ error }}</p>
-    </div>
+<!--    <div class="alert alert-danger" *ngIf="error">-->
+<!--      <p>{{ error }}</p>-->
+<!--    </div>-->
+
+<!--    <app-alert [message]="error" *ngIf="error" (close)="onHandleError()"></app-alert>-->
+    <!-- You can also create this <ng-template> outside of <div class="row"> here. Because this error alert box is an overlay
+     of all of the page and it doesn't need to be a child of container of auth component.-->
+<!--    <ng-template appPlaceholder></ng-template>-->
 
     <!-- For disabling the submit button if this form, we can declare a local reference to this <form> element, to get the
     information about the overall form and one of the information is if that form is valid or not, so we can use that in [disabled]

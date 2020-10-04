@@ -940,9 +940,62 @@ The intercept() method needs to get 2 arguments- req which is a generic type of 
 data that request will return eventually. Also we need to provide the next arg of type HttpHandler.
 -->
 <!-- 18. Adding Logout:
- -->
+Before storing the user token in a presistant way on the user computer, so it would exist even if the app reloads(because currently
+reloading the app would cause losing the state of user) and also before protect certain routes. Let's add the logout functionality
+to auth service.
 
-<!-- 21. Adding an Auth Guard:
+Now we need to presist the token so it won't gone once we reload the app.
+
+19. Adding Auto-Login:
+So we must make things up so once we are authenticated, we don't just keep that status as long as as we're navigating around in the
+app, but we also keep that token when we reload the app.
+Important: Because when you reload the page, your angular application restarts and the old angular app is dumped and since
+ currently we're managing everything in memory, so remember currently we are storing the token(which is our identifier
+ for authenticated and unauthenticated user) in the user model which happens in javascript only and which therefore happens
+ in memory. Since we manage it all in memory, we'll lose all that state whenever the application restarts because that memory
+ gets cleared automatically.
+ There is no connection between the last time we ran this angular app on this web page and the current time we are running it.
+So there is no connection and therefore memory is lost. So if we want to store that token, we have to store it somewhere else and
+not in a javascript variable or a class prop. We have to store it in a persistent storage which must survive the page reloads
+and browser restarts, that we can write to that persistent storage and also we can fetch data from that storage.
+
+Learn: In a browser, you've got different storages, you can't access the normal filesystem on your device but you can work with
+ cookies or local storage of browser which is an API exposed by the browser to store simple key-value pairs basically on the
+ filesystem but controlled by the browser and we will use local storage in this project to store the user token.
+To do that, let's go to handleAuthentication() method in auth service which that method is where we do create our user object
+and emit it to our application and there, besides emitting it to the application, we also want to store it in browser storage.
+localStorage.setItem() allows you to write an item to the local storage and store data there.
+
+Important: Right now, we want to store an object in localStorage which is the user object, but you can't simply pass
+ javascript object to second arg of setItem(), instead we have to convert it into a string. So we can use JSON.stringify(<object>).
+ JSON.stringify(<object>) , serializes a javascript object or in other words, it converts a javascript object to a string
+ version of it!
+Now after authentication, if you go to application tab of devtools and then go to Local Storage you can see the userData key
+which you set in setItem() method and it's value and it's a javascript object which is converted to string.
+
+Now with all of that being stored there, we can also retreive it from there when application restarts.
+For that, let's add a new method named autoLogin() in the auth service file. Why we named it autoLogin?
+Because it basically is a method that will try to automatically set the user to login when the application starts and it will do
+that by looking at the local storage of browser and checking whether there is an existing user snapshot stored or not.
+So in that method we need to retrieve data from local storage.
+
+localStorage.getItem() is a sync method.
+-->
+<!-- 20. Adding Auto-Logout:
+We need auto logout too! Because our token will expire and it has an expire time of one hour from when we get it and therefore
+right now we have a bug in our app because the token will expire but our application won't reflect that. So we are automatically or
+manually by logging or signupping the user, logging in the users in forever. Because we have that snapshot of user object in local storage
+and we never clear that snapshot. So we should clear that user object in local storage when we logout, but right now it will never
+clear automatically. Because if the token expires after one hour, nothing changes in our app. So first in auth service, we should make
+sure that since we store a snapshot when logging in(or sign up), in the logout we must clear that user object in localStorage.
+
+Now we also need to set a timer which starts when we get the token for the first time, so we know when to invalidate that token
+at a later point of time and for that we create autoLogout() method in auth service.
+
+Learn: You can get the time in milliseconds from a variable or prop which is in Date type, by calling .getTime() on it.
+ So for example you can say: new Date().getTime() which returns the time of current time in milliseconds.
+
+21. Adding an Auth Guard:
 We want to PREVENT the users from visiting /recipes if they are not authenticated.
 Learn: A route guard allows us to run some logic, right before a route is loaded and we can deny access if a certain condition
  is not met. You can name the class of guards, like AuthGuard or like AuthGuardService, because they are technically services.
@@ -955,9 +1008,408 @@ Learn: A route guard allows us to run some logic, right before a route is loaded
  type for that) or an observable which will also eventually yield a boolean value.
 
 In canActivate() we want to return the status as we can derive it from our auth service. So let's inject the auth service in that
-guard.-->
+guard.
+
+Learn: !!user is a trick that converts a true-ish value (in this case it's user) like an object(anything that is null or undefined),
+ to true so to a real boolean or it converts a false-ish value like null or undefined to a real boolean and in this case the value of
+ that boolean would be false.
+Now go to app-routing module and add canActivate prop to the prop you want to protect with a guard.
+
+We used a BehaviorSubject for user object and not a Subject because a BehaviorSubject unlike a normal Subject,
+always gives us to the previous value and that helps us ensure that we can get access to the user object even if in this
+part of the application where we need it, we missed the previous emitted user(missed means for example we are using a take(1)
+operator and therefore we don't have an ongoing subscription to that Subject and we just need the lates emitted value. So
+if you use Subject, you can't get the latest emitted value of Subject, because normal Subject don't let the observers get
+immediate access to previous emitted value, so we need to use BehaviorSubject). But why in take(1) we say we are looking for
+the LATEST emitted value of that BehaviorSubject?
+Because we haven't an ongoing subscription to that BehaviorSubject, therefore we don't get informed immediately when a new
+value of BehaviorSubject is emitted. So we can't use just normal Subjects for using in take(1) observer. Because take(1)
+makes the observer to doesn't always observing that obs and when that file or that code gets executed, it needs to get the
+latest emitted value. So that Subject needs to maintain the previous value in order to inform the observers which havn't an
+ongoing subscription to that BehaviorSubject.-->
+
+<!-- Dynamic Components:
+Dynamic components are components which you can create them dynamically at runtime. So let's say for example you want to
+show an alert or a modal, which should only be loaded upon a certain action. That modal should be implemented by using a dynamic
+component. So we need to load that kind of component ON DEMAND and also we need to get rid of that component. Because a modal
+or ... always shouldn't be shown!.
+
+2. Adding an Alert Modal Component:
+Let's create an alert dynamic component in shared folder.
+
+3. Understanding the Different Approaches
+Dynamic components in general just means that you wanna display some component dynamically which means that component is not
+always there but it's there once sth specific happens in your code. Therefore you typically want to control programmatcially
+when that component should be loaded or displayed. One way of controlling that is to use *ngIf. *ngIf way use a declarative
+approach, which means you simply add the component selector in your template and then you use *ngIf to only load it when a
+certain condition is true. So you use *ngIf to control whether the DOM really has that condition to display the dynamic component
+or not.
+RECAP: In *ngIf the dynamic component embedded via it's selector(declaratively)
+       *ngIf controls whether the component is added to DOM or not.
+
+The alternative approach is sth in the past named dynamic component loader. This was a helper utility that you shouldn't use it anymore,
+but in the end, now it's a general concept about creating a component in code and then manually attaching it to DOM.
+So in this approach, in the code you must control how that component is instantiated and data is passed into it and also when that
+component must be removed by yourself.
+SO everything that *ngIf automatically does for you, in this approach you must do on your own.
+But this approach allows you to control it entirely from your ts code and don't have to touch the template for loading that component
+and ... .
+
+4. Using ngIf:
+Using *ngIf approach is better where in this approach you show some component when some condition is met.
+
+Now let's use other approach where we create the dynamic component ENTIRELY in code and also control it from there.
+
+5. Preparing Programmatic Creation:
+Let's comment the *ngIf approach for showing app-alert component.
+Now we need to create that alert component programmatcially and show it programmatcially  from inside the .ts code.
+For that, let's create a new private method in the component which we want to show that dynamic component. So I created showErrorAlert()
+in auth component and this method in this case has to be called whenever we have an error and therefore in onSubmit() method, when
+the obs throws error, we must call this new method in order to show the error alert. Also we pass the error message to that method.
+Now we don't need that error prop, which we were using it in template file, but still I didn't comment it.
+
+Important: It's better to name the attr directives: app<name of directive> . So for selector prop of directive we would have:
+ selector: '[app<name of directive>]' for example: '[appDropdown]'.
+
+6. Creating a Component Programmatically:
+Now we created the placeholder directive, let's go to the place where we want to add that directive and therefore the dynamic component,
+which is the auth.component.html . Now you could use a normal <div> for using the placeholder directive on it, but there's a better
+element in this case which is <ng-template> .
+Learn: <ng-template> is a directive which will not actually render anything to the DOM but still is accessible in the
+ angular templating language. So using <ng-template> instead of adding another HTML element for a placeholder to outputting the
+ dynamic component is great because we don't add the overhead of an extra DOM element there, instead we can simply just get access
+ to a place in DOM in order to output that dynamic component. Now let's add our placeholder directive to <ng-template> .
+ So we can get access to a place in DOM without actually render anything there with <ng-template> and using placeholder directive.
+
+So now we have that <ng-template> element which is considered by angular when it parses the template file but which does not
+render a real element to the real DOM which is useful in our case, but we will be able to get access to that <ng-template> in
+DOM, because it is simply remembered by angular.
+
+Learn: We can get access to <ng-template> directive, by using @ViewChild() and we must pass a selector to () of @ViewChild() also
+ you can pass the NAME of local reference as a string to it.
+ Also you can pass a type and it will look for existence of that type in the template file of that .ts file.
+ So in this case, if we pass the placeholder directive as a type to @ViewChild() , it will automatically find the FIRST PLACE
+ where we used that directive with the given type to @ViewChild() , in the template of that .ts file.
+Important: When you want to pass in a type to @ViewChild() don't pass it as a string. Then @ViewChild() will try to find the
+ first occurrence of that type in template or DOM.
+ Also don't forget to add the {static: false} as the second arg of @ViewChild() .
+ Then you must store that @ViewChild() into a property.
+In our project, we named that prop which holds that @ViewChild() , alertHost. Because it will be the place where we host our alert
+and that prop would be of type PlaceHolderDirective because that prop is holding a @ViewChild() which is pointing to a type of
+PlaceHolderDirective.
+
+So now we get access to the directive we used in the template by using @ViewChild() and we store that reference into alertHost prop.
+Now we can use this prop which holds a property named viewContainerRef for the factory which is for outputting the dynamic component.
+We can get access to that viewContainerRef prop because it is a public property of that directive. (You could also work with that
+viewContainerRef prop without storing it in a new variable.)
+
+Now the next step is to clear anything that might have been rendered in that reference before, by calling clear() on that
+viewContainerRef.
+Important: So nw you understand, as I mentioned, viewContainerRef is not just a pair of coordinates of some place in DOM, instead,
+ it's an object that allows you to interact with that place in the DOM.
+ When using clear() on a type viewContainerRef, simply clears all of angular components that have been rendered in that place which
+ viewContainerRef points to it. So it's neccessary to clear anything there, before rendering sth new there.
+
+After clearing everything that is inside of place we want to output the dynamic component, we can use the component factory of
+that dynamic component to create that dynamic component in that reference and this is simply done by calling the viewContainerRef
+of that place and calling createComponent() on it and createComponent() does not need the type of that dynamic component but instead
+it needs the factory of that component. Now it will create that dynamic component in that place.
+But we will get an error! Which says: "No component factory found for <type of dynamic component>. Did you add it
+to @NgModule.entryComponents ?"
+
+Remember: Each dynamic component has it's own factory. -->
+<!-- 7. Understanding entryComponents:
+If you are not getting the previous error that I mentioned and it just works without any errors, because you are using angular 9 or
+higher.
+But why we get this error?
+Because it didn't find a component factory for AlertComponent(our dynamic component). But we created that factory, why it didn't find
+it?
+Because we need to add that factory to @NgModule.entryComponents.
+For this, you need to know how angular works behind the scenes, when it comes to creating components.
+Of course any components as well as directives and pipes that you plan to use them, you need to add them to the declarations array
+of app.module.ts file. This is crucial for angular in order to understand what components, directives and ... you have in your
+application. Because angular does not automatically scan and you need to tell it which components exist. But this alone, makes
+angular aware of that component, so it is able to create such a component when it FINDS that declared component or ... in one
+of 2 places. Now what are those 2 places?
+
+The first place would be in your template files. So if angular finds a selector like <app-recipe-item> it basically looks into
+declarations array, finds it there and therefore it is able to create that component.
+
+The other place where angular will look for create a component, is in app-routing.module and in routes array. In that array, when
+you point to a component, angular will also check that component in declarations array and if it finds it there, it is able to
+create such a component and load it.
+
+But one place that does not work by default, is when you want to create a component MANUALLY IN THE CODE which is what we are
+doing in auth.component. There we're creating our own component factory and passing our component to it and there, angular does not
+automatically go to the declarations array. So you have to deliberately inform angular that in this case the AlertComponent(the
+component that we're trying to create) will need to be created at some place and angular should be prepared for this.
+So now angular will prepare itself for that creation when it finds that component in a template or in the routes config(
+app-routing.module file).
+Now in order to tell angular to be prepared for creation of that new component, you need to add a special property to the object
+you passed to @NgModule() in app.module file. So add entryComponents prop which is an array to that object. It's an array of
+types of components, but only components that will eventually need to be created without a selector or the route content being used.
+
+Important: So whenever a component is created by it's selector or you use that component in the route configuration, you
+ don't need to add the type of that component in entryComponents array.
+
+Depending on the angular version you are using, you might not need entryComponents array. So if you are working with ng9 or higher
+you can omit entryComponents by default because in those versions, angular under the hood, uses a different rendering engine(Ivy).
+But if you use that prop, it doesn't throw errors.
+
+Now angular is ready to create that component whenever you prompt it to create and you prompt it, by using createComponent() .
+Now you created that component, programmatically. But there are some problems.-->
+<!-- 8. Data Binding & Event Binding:
+Currently we do have @Input() and @Output() for getting the message from parent component and show it in that component and for
+closing that alert box. But we're not using property or event binding on our component at the moment. Because we created that
+component in the code, so we can't use [] or () for property and event binding.
+So when you create a component by code, you can't use () for event binding and [] for property binding on that component.
+
+Important: So how we can pass data into that component which is in parent component (passing data to a component is possible by
+ using @Output() in the child of that component folder, or by creating some props in that folder and use them on that component)
+ and how we can listen to an event on that component or remove that component(because it's a dynamic component)?
+Well, we simply have to store the component that we created in some const or variable, so we can work with that component thereafter.
+So we must store the result of createComponent() in a variable or ... . In this case, the name of that variable is componentRef.
+Because it's just a reference to that component.
+Now we can interact with that component by using that variable.
+
+There's no too many use cases of using the second approach of creating a component dynamically, but if you are author of a library
+and you want to give the users of your library an in-code way of showing a component, that would be the case of second approach.
+
+The content that are inside a *ngIf, won't show up until the condition is true. So you are not cluttering your DOM with unused
+content. Because they won't even show up if the condition of *ngIf isn't true.
+
+Recap of second approach:
+You create your own component factory and then you use a viewContainerRef which you can get access to it with a helper directive,
+to dynamically create AND render your component and any component that are rendering like this, needs to be added to entryComponents
+array in your @NgModule() .
+ -->
+
+<!-- 22. Angular Modules & Optimizing Angular Apps:
+2. What are Modules:
+
+-->
+
+<!-- 26. Angular Animations:
+We can use the animation system of angular in order to for example render adding items to a list or the conditional attaching or
+detaching of elements to the DOM. Because these things are hard to handle with normal css transitions or animations. Why they
+are hard?
+Because if you add sth to the DOM which wasn't there before and you want to animate that work, it's hard to do that with css
+transition style.
+
+3. Setting up the Starting Project:
+For example we have a button that by clicking on it, an item will be added to a list. Also we created an empty <div> which I
+want to animate it in this case.
+
+4. Animations Triggers and State:
+Angular animations are set up in object we pass to @Component() , so we can use them in template file of that component.
+So in object we pass to @Component() , add animations array and in that array we define the animations that this component
+should aware of them.
+Each animation has trigger() . With trigger() we tell angular that we want to define a certain name which we can place it in
+the template of that component which by placing that name, it would trigger a certain animation for that element it placed on it.
+Since I defined an empty <div> to animate it, I named that animation, 'divState' . Now we must attach some animations that
+this trigger() will do, because trigger('<name of animation>') itself and alone, won't do anything if placed on an element.
+
+The second arg of trigger() defines the animation which that trigger() should toggle it and that second arg is an array.
+
+For placing that trigger on an element in DOM. We use [] like we are doing property binding and then place:
+[@<name of animation>]
+Which the name of the animation is in trigger('<name of animation>')> . Now we need to bind that [@<name of animation>] to sth.
+Why we must bind it?
+Because the animation we define, shouldn't run all the time for that element.
+Important: So we used property binding for showing animations in order to kind of bind the condition for displaying the animation.
+ Which that condition is in "". So we have sth like this:
+ <div [@<name of animation>]="<condition for showing that animation, till that condition is falsy and also controls which part
+ of that animation should run?>">
+For this example we bind that animation to a property called state which we initially set it to 'normal', the value of that prop
+is up to you, but we will use that prop which would have different values it can have in trigger() . Now how we use that prop in
+second arg of trigger() which that second arg is an array?
+Let's say we want to define 2 states. First state is 'normal' which is the default one for that trigger() and then we want to
+give it another state which is 'highlighted'.
+Important: So we want an animation between 2 states and that is how angular animations work. So in angular animations,
+ you transit from state1 to state2 in other words, you work with states. So because of this, we named the property which controls
+ the state of animation, state. But you can name it whatever.
+
+Now in second arg of trigger() , we define state() and we would have at leas 2 state()s! Because well, in simplest animations in
+angular, we transit from state1 to state2 so we would have 2 state()s.
+Now we need to give those state()s a name. For the first state() we gave it 'normal' and the name we pass to first state() should
+match the initial value of the state property. So we have initial value for the property which controls the state of animation, which
+we named that property, state, which has an initial value of 'normal' and this initial value should match the name we pass to
+the first state() and the name we pass to state() should match the state we use in template file.
+Important: The names that you pass to state() is up to you but make sure you use them in value of the property which controls states
+ and also in template file. So for example if you use 'normal' and 'highlighted' in state()s, make sure you use those names for
+ initial value of the prop which controls the state of animation which that prop would bind to the [@<name of animation>] in template
+ file. So other crucial thing is that we bind the [@<name of animation>] to the prop which controls the state of animation.
+
+Now how should the 'normal' and 'highlighted' states look like?
+We specify that in second arg of state() . In that arg, we pass the style() method which we pass an object to it and in object
+we pass to style(), it's almost like writing css code but don't use any dashes. But if you want to use dash, you must enclose that
+css property in single quotes, OR by using camel case without ''.
+
+Important: An animation always is a journey from one state to other state.
+Right now we are just in beginning state which in this case is 'normal' state and now we want to go to 'highlighted' state.
+
+So we need to get to highlighted state and also we need to animate the transition or in other words, the movement between
+two states.
+
+NOTE: We used 'transform': translateX(0) in 'normal' state and you could say: "Hey! We know that in the initial state of any element,
+that element is always is in it's initial place, so writing 'transform': translateX(0) for the initial state of an element is vain!"
+No it's not vain! Because the animation would also be reverse. So the animation would also have a transition from 'highlighted' state
+to 'normal' state, so from 'state2' to 'state1' and they're not always limited to 'state1' to 'state2'. So we must write that
+'transform': translateX(0) too, if we have plan to also transit from 'state2' to 'state1'.
+
+5. Switching between States:
+Right now in our app, we are able to display one state for animation which the name of that state is 'normal'. Or if you change the
+value of the prop which controls the states of animation to 'highlighted', it would show the 'highlighted' state styles which are
+defined in style({}) of 'highlighted' state.
+
+Now we want to animate the TRANSITION between those 2 states. So we somehow need to change the state prop from our code.
+Because that prop is responsible for changing the states of the animation.
+
+In our template we have a button which when we click on it, it calls the onAnimate() method.
+So let's create or hook up on the onAnimate() method in our .ts code and in that method we want to switch the state of animation.
+In that method, we are checking if this.state is equal to 'normal' then we set it to 'highlighted' otherwise(otherwise means
+this.state is not 'normal' right now and therefore it is definitely 'highlighted', so we set it to 'normal').
+
+
+EX)
+.ts file of component:
+@Component({
+...
+animations: [
+  trigger('divState', [
+    state('normal', style({
+      'background-color': 'red',
+      'transform': 'translateX(0)'
+    })),
+    state('highlighted', style({
+      'background-color': 'blue',
+      'transform': 'translateX(100px)'
+    })),
+    transition('normal => highlighted', animate(300)),
+    transition('highlighted => normal', animate(800))
+  ])
+]
+})
+export class AppComponent {
+  state = 'normal';
+  ...
+
+  onAnimate() {
+    this.state === 'normal' ? this.state = 'highlighted' : this.state = 'normal';
+  }
+}
+
+.html file of component:
+<div
+style="width: 100px;height: 100px;"
+[@divState]="state"
+>
+</div>
+
+After creating that method, if you click on that button, the <div> would be gone! and that's a bug with angular because we are
+using 'background-color' which has single quotes so it is a string and also another background-color which is backgroundColor which
+isn't a string. So let's make it also a string. Also we need to use the dashed version of that property too, moreover both
+must be string. So:
+Important: You must use the very same versions of a css prop in your style object in angular animations. So for example if you used
+ 'background-color' in one of the states, you must use the exactly version of that css prop in other states too! So it must have
+ '' and also - (not camel case).
+
+Now by clicking on that animate button, the <div> would toggle between those two states(why toggle? Because we are toggeling between
+those states in onAnimate() method. So that's why we used 'transform': 'translateX(0)' in 'normal' state. Because we are actually
+toggeling between those states. So we want to go back to first place of that animated element too!).
+
+But now we want to animate that toggle between states. This means, we don't want to instantly switch between those states which
+currently we are doing that, but now we want to animate that. Because if you don't animate that transition between states, well
+why you are using angular animations at all?!! Because just appending different styles to 2 different states without animating the
+transition between those states can be done without angular animations and in just pure css.
+
+6. Transitions:
+Now we are able to kinda hard switch between states which means there is no animation when changing states. So we need to animate
+it. So in second arg of trigger() which is an array, let's add transition() method which would sit next to the state() methods.
+
+transition() method allows us to describe how the transition from one state to another state should work or look like or how should
+be animated.
+transition() as the first arg expects the name of the starting state and then a fat arrow and then the next state.
+For the second arg of transition() , we specify the animate() method. The simplest thing we can pass t animate() is number of
+milisedonds which that transition() should take. Also we can define some in between styles during the animation of transition too.-->
+<!-- 7. Advanced Transitions
+If you have same timing for both toggeling transitions, instead of saying:
+  transition('normal => highlighted', animate(300)),
+  transition('highlighted => normal', animate(300))
+you can say:
+transition('normal <=> highlighted', animate(300))
+
+The latter means in back and forth, use the same animate() function.
+
+Let's say you need to control the styling of the element which we are animating it, DURING the transition between states of that
+animation. So NOT just control the beginning and the end state stylings, but during those states too.
+For doing that, we need another state(because we want to add some styles during the transition between the prior states, so I added
+another state for this purpose), so let's just use the last example with some extra stuff added to it:
+EX)
+@Component({
+...
+animations: [
+  trigger('wildState', [
+    state('normal', style({
+      'background-color': 'red',
+      'transform': 'translateX(0) scale(1)'
+    })),
+    state('highlighted', style({
+      'background-color': 'blue',
+      'transform': 'translateX(100px) scale(1)'
+    })),
+    state('shrunken', style({
+      'background-color': 'green',
+      'transform': 'translateX(0) scale(.5)'
+    }))
+    transition('normal' => 'highlighted', animate(300)),
+    transition('highlighted' => 'normal', animate(800)),
+    transition('shrunken' <=> *', animate(500))
+  ])
+]
+})
+export class AppComponent {
+  state = 'normal';
+  wildState = 'normal';
+  ...
+
+  onAnimate() {
+    this.state === 'normal' ? this.state = 'highlighted' : this.state = 'normal';
+    this.wildState === 'normal' ? this.state = 'highlighted' : this.state = 'normal';
+  }
+
+  onShrink() {
+    this.wildState === 'shrunken';
+  }
+}
+
+.html file of component:
+<button (onClick)="onShrink()">Shrink!</button>
+
+<div
+style="width: 100px;height: 100px;"
+[@wildState]="wildState"
+>
+</div>
+
+But right now with that code, the shrinking is not really animated and it happens instantly when we click on the shrink! button.
+So we need a third transition(), because currently we're only targeting the 'normal' and 'highlighted' states.
+Why we used * in 'shrunken' <=> * ?
+Because we don't care if we go or come from normal state or highlighted state, we want to play the same animation.
+Important: 'shrunken' <=> * means 'shrunken' to any state and 'shrunken' from any state, should play that same transition.
+Also the wildcard state is useful when you derive the state dynamically and therefore you might don't know which state that
+animated element could have in that moment.
+
+In angular animations * means any state that we have.
+Also <=> means transit FROM and TO those states. eg: 'a' <=> 'b' means transition from 'a' to 'b' and from 'b' to 'a' state.
+
+Now we need to add some in between styles between the transition() .
+
+8. Transition Phases:
+ -->
 
 <!-- RXJS youtube academind:
+RxJS what and why?
 An observable is basically a wrapper around some data source and data source typically means a stream of values.
 So we have that stream data which possibly is asynchronous, so async data source is possible multiple values over time and
 now we want to do sth whenever a new value of that data source occurs. This is the job of observer.
@@ -988,13 +1440,43 @@ Important: So the observer has 3 methods where we can handle any values in those
 
 In subscribe() we pass the observer.
 The subscribe() method takes 2 possible args.
+
+---------------------
+Observables, observers and subscriptions:
+
+---------------------
+RxJS operators like map() or throttleTime():
+---------------------
+RxJS6:
+---------------------
+switchMap():
+It allows us to trigger some value emissions, whenever ANOTHER obs emits a value.
+
+An interval, is an obs which emits a new value every x milliseconds.
 -->
 
-<!--
+<!-- My notes:
 Important: When a router navigates to a route that renders the same component, the component isn't initialised again.
  So for rendering that component again, we can declare the dynamic segments of the url in that component and change it reactively
  by saying:
  this.route.params.subscribe((params: Params) => {
           this.user.id = params['id'];
           this.user.name = params['name'];
-      });      -->
+      });
+
+Learn: Any properties on the component's class, are considered as reactive state and when the value of those props change,
+ that component will be re-rendered.
+For example we can bind the properties of that component to html template of that component by using {{}}.
+
+When you on a component and want to implement the loading, if you are subscribing to route.params, you need to set isLoading to
+true, because if the route changes, that subscription would emit a new value and you need to set isLoading to true and only
+set it to false, when the data you want to use in that component or in general the data you want in any component is received.
+Also there is no need to set isLoading to true inside ngOnInIt() too(so there is no need to set isLoading to true, both inside
+ngOnInit() and also inside the subscription to route.params obs.). LOOK AT THE darsad-site and in it's detail-page component .
+There, we are subscribing to route.params() inside ngOnInit() , by doing that, when we entered another url which that url is
+handled by the same component that we were before on that component, the data would be updated, because when url changes, the
+route.params subscription would emit a new value which is the new url and we send another http request for new data and update it
+and also we set isLoading to true in that subscription to route.params . So whenever the url changes but that new url is also
+handled by the same component, we set isLoading to true and we set it to false, when the data we requested is received.
+So that is an important pattern.-->
+
