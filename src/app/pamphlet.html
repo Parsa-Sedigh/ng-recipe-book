@@ -63,7 +63,7 @@ ng generate pipe or p <name of pipe>
 
 9. Pure and Impure Pipes (or How to fix the Filter Pipe):
 Angular is not rerunning our pipe on the data whenever this data is changes. So as soon as we change what we enter in that
-<input> which adds a server, for example even add a black space on that input and then remove that space, we would update the
+<input> which adds a server, for example even add a blank space on that input and then remove that space, we would update the
 data that is shown or our pipe.
 So CHANGING the input or the data that is going into the pipe, will trigger a recalculation or in other words, will trigger the
 pipe to get applied to the data again.
@@ -86,6 +86,16 @@ The reason is that the filter pipe gets recalculated whenever data changes. But 
 So by saying pure: false , so now the pipe is not purely focusing on whether it's arguments was changed or not and therefore it
 also looks for whether anything on the page changes or not and then would be recalculated. By default (pure: true) the pipe
 will just focus on it's args and see if it's args was changed or not and then would recalculated.
+
+Learn: How make a pure pipe, impure without using pure: false which leads to performance issues? In other words, I want to
+ fire the pipe manually. But how?
+ One way to make a Pure Pipe becoming impure is add a parameter to your Pipe. So when you want to refresh, just change the
+ parameter. So that pure pipe will be fired when that parameter we added to it, changes.
+ Another way without adding parameter to the pipe:
+ Pure Pipe will be fired when its input(the first parameter of transform() method of pipe, which is the value param) has a
+ new instance. So with TypeScript 2.1+, the below code will copy the original object with a new instance, and lead pure pipe to
+ be fired:
+ let copy = { ...original }
 -->
 <!-- 10. Understanding the async Pipe:
 Let's say we have a HTTP request to a server and we get the data back from that server after 2 seconds and we are using that
@@ -1185,9 +1195,61 @@ array in your @NgModule() .
  -->
 
 <!-- 22. Angular Modules & Optimizing Angular Apps:
-2. What are Modules:
+2. What are Modules(angular modules or NgModules):
+Angular modules are ways of bundling angular building blocks together. Angular building blocks could be components, directives,
+services, pipes.
+You have to group them altogether into angular modules in order to make angular aware of those feature.
+Why we have to do that?
+Because angular doesn't automatically all of the files in your project, so it doesn't search all of the code you write and therefore
+doesn't automatically detect all components and services and ... . Instead YOU need to tell angular what is a component, which
+components do you have and you can bundle them together into modules.
+Every angular app needs to have at least one module which is app module. You can't have an angular app without that module I mentioned.
 
--->
+Angular analyzes NgModules in order to "understand" your application and it's features. You use NgModules to define all of the
+core building blocks(components, directives and ...) of your application.
+Learn: So angular modules define all building blocks that your app uses.
+and an app requires at least one module(app module) but might be split into multiple modules.
+
+You also have the core angular modules which are wrapped into modules, things like formsModule. So angular itself also provides
+certain features which are grouped together into such modules, therefore you don't have to declare like for example 10 different
+form directives. instead that forms module gives you all of those directives.
+
+You can't use a certain feature or building block, without including it in a module. But how you include it in a module?
+You add that building block(important: A building block means a component or ...) to declarations array or providers array, depends
+on the feature(building block) you are talking about.
+
+3. Analyzing the AppModule:
+We use app.module and app-routing.module to set up certain things and group them together.
+
+We have declarations, imports, providers, bootstrap array.
+
+In declarations array of app.modules, declarations is an array of all of the components, directives and custom pipes that
+when we want to use them we add them to that array. So all of those things have to go to declarations array, otherwise you can't
+use them in your templates or in your routes.
+
+We also have imports array which allows you to import other modules into that module we are currently in it.
+So imports array is crucial for splitting your app into multiple modules. Thus far, we created only one extra module which is
+app-routing.module and therefore we added it into imports array of app.module . But we are also using a couple of modules which ship
+with angular, like the FormsModule, the ReactiveFormsModule and ... .
+Now if we look into such those modules, we would find a module with @NgModule() as well and in there, we would have a declarations
+array with all the form related directives(the related directives to that module) that angular supports.
+Those directives are like: automatically detecting a form element to create a form with the template driven approach or the
+required or the email directives. So all of them are basically included in the FormsModule, therefore you don't have to
+add all of those features which are included in the FormsModule, individually in your appModule declarations array. Because
+they are already in the declarations array of FormsModule and therefore by using that FormsModule, you are already including
+those features too. So we can simply import the FormsModule which speeds that process up.
+
+The providers array we define all the services that we want to basically provide. But the relation between services and NgModules
+are a bit different than components and declaration or ... . Because it's not the case that you can only use a service in the module
+where you provided that service or at least that's not always the case. But we will come back to this subject. For now just
+know that ANY service you plan on injecting it, needs to be provided and typically you do that in app.module OR you do that
+by adding providedIn: 'root' in the object that you pass to @Injectable() in the file of that service.
+That's an alternative for adding that service to your app.module providers array.
+
+The bootstrap array is crucial for starting your app. It defines which component is available right in the index.html file
+(in index.html , we instantiate app component and therefore that is the component for starting the app) and typically you only
+have one component there. You could have multiple components in index.html but then each component would kind of be detached from
+the other components. TODO till 3:00 -->
 
 <!-- 26. Angular Animations:
 We can use the animation system of angular in order to for example render adding items to a list or the conditional attaching or
@@ -1406,7 +1468,39 @@ Also <=> means transit FROM and TO those states. eg: 'a' <=> 'b' means transitio
 Now we need to add some in between styles between the transition() .
 
 8. Transition Phases:
- -->
+In animate() we can control the whole animation and define styles that the animation should take during the animation. So pass the
+second arg of animate() which is style() function and as we can define style() in the second arg of state() , we can also define the
+style() during the animation and inside the animate() .
+
+EX) animations: [
+  trigger('wildState', [
+    state('normal', style({
+      'background-color': 'red',
+      'transform': 'translateX(0) scale(1)'
+    })),
+    state('highlighted', style({
+      'background-color': 'blue',
+      'transform': 'translateX(100px) scale(1)'
+    })),
+    state('shrunken', style({
+      'background-color': 'green',
+      'transform': 'translateX(0) scale(.5)'
+    }))
+    transition('normal' => 'highlighted', animate(300)),
+    transition('highlighted' => 'normal', animate(800)),
+    transition('shrunken' <=> *', animate(500, style({
+      borderRadius: '50px'
+    })))
+  ])
+]
+Now if you hit shrink! button, it's kind of ugly, because we let that border-radius to make the shape more round, but once that
+transition finishes(after 500 milliseconds), it INSTANTLY change to the end state, which in the end state we have 0 border-radius.
+So we want to SMOOTHLY have that in-between styles or in other words, not just animating the chainging of border-radius and then
+JUMP to the end state.
+For doing that, we need to replace the animate() function with an array.
+Learn: We can pass an array as the second arg of transition() and in that array, we can define starting and in-between states, during
+ the transition. So we can pass style() there. //TODO till 2:00
+-->
 
 <!-- RXJS youtube academind:
 RxJS what and why?

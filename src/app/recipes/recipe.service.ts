@@ -147,7 +147,7 @@ export class RecipeService {
   }
 
   /* Because we have some duplication when using this.recipesChanged.next(this.recipes.slice()); in 2 methods, you can
-  * create a private method for this line of code and then call that method in these 2 methods. */
+  create a private method for this line of code and then call that method in these 2 methods. */
   addRecipe (recipe: Recipe) {
     console.log(recipe);
     this.recipes.push(recipe);
