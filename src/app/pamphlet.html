@@ -1572,5 +1572,28 @@ handled by the same component that we were before on that component, the data wo
 route.params subscription would emit a new value which is the new url and we send another http request for new data and update it
 and also we set isLoading to true in that subscription to route.params . So whenever the url changes but that new url is also
 handled by the same component, we set isLoading to true and we set it to false, when the data we requested is received.
-So that is an important pattern.-->
+So that is an important pattern.
+-------------------
+A note about pipes:
+An Angular pipe is pure by default. It only triggers an update when any of the input parameters change. It's the only way that
+you can "activate" the pipe (update its result). So for example if we have a pipe like:
+EX) @Pipe({
+    name: 'filter',
+})
+export class FilterPipe implements PipeTransform {
+    constructor(private filterService: FilterService) {}
+
+    transform(array: any, start?: any, end?: any): any {}
+}
+
+Important: So in the example above, only when Angular detects a change in either array, start or end, then it runs the pipe.
+ Once again, changing the parameters of transform() method is the only way to control the re-running the pipe.
+the first parameter to the pipe always specifies the target that the pipe acts on, usually an array (non-scalar). When
+that parameter which usually is an array is changed, the pipe should be activated too, but there's a gotcha!  Since arrays are
+passed by reference, when you wanna update the source array, like fetching a new page of items, if you want to trigger update,
+it is important to change the array itself, not just mutate its content. So it is a good way to ASSIGN the new values to the array,
+in order to change it completely. For example:
+array = [...array, newItem];  // This won't update the array completely: array.push(newItem);
+
+So stick to that rule then your pipe will behave well. -->
 
