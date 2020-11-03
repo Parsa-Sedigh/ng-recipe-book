@@ -1455,7 +1455,8 @@ style="width: 100px;height: 100px;"
 </div>
 
 But right now with that code, the shrinking is not really animated and it happens instantly when we click on the shrink! button.
-So we need a third transition(), because currently we're only targeting the 'normal' and 'highlighted' states.
+So we need a third transition(), because currently we're only targeting the 'normal' and 'highlighted' states.(Therefore I added:
+transition('shrunken' <=> *', animate(500)))
 Why we used * in 'shrunken' <=> * ?
 Because we don't care if we go or come from normal state or highlighted state, we want to play the same animation.
 Important: 'shrunken' <=> * means 'shrunken' to any state and 'shrunken' from any state, should play that same transition.
@@ -1468,9 +1469,10 @@ Also <=> means transit FROM and TO those states. eg: 'a' <=> 'b' means transitio
 Now we need to add some in between styles between the transition() .
 
 8. Transition Phases:
-In animate() we can control the whole animation and define styles that the animation should take during the animation. So pass the
+In animate() we can control the whole animation and define styles that the ANIMATION should TAKE DURING the animation. So pass the
 second arg of animate() which is style() function and as we can define style() in the second arg of state() , we can also define the
 style() during the animation and inside the animate() .
+Now the styles we define in style() in animate() function, which those styles are kinda in between styles would taken during the animation.
 
 EX) animations: [
   trigger('wildState', [
@@ -1488,19 +1490,334 @@ EX) animations: [
     }))
     transition('normal' => 'highlighted', animate(300)),
     transition('highlighted' => 'normal', animate(800)),
-    transition('shrunken' <=> *', animate(500, style({
-      borderRadius: '50px'
-    })))
+    // transition('shrunken' <=> *', animate(500, style({
+    //  borderRadius: '50px'
+    // })))
+    transition('shrunken' <=> *, [
+      style({
+        'background-color': 'orange'
+      }),
+      animate(1000, style({
+        borderRadius: '50px'
+      })),
+      animate(500)
+    ])
   ])
 ]
 Now if you hit shrink! button, it's kind of ugly, because we let that border-radius to make the shape more round, but once that
-transition finishes(after 500 milliseconds), it INSTANTLY change to the end state, which in the end state we have 0 border-radius.
-So we want to SMOOTHLY have that in-between styles or in other words, not just animating the chainging of border-radius and then
+transition finishes(after 500 milliseconds), it INSTANTLY jumps to the end state, which in the end state we have 0 border-radius.
+So we want to SMOOTHLY have that in-between styles(in-between means the styles that we defined for the animation itself, which are
+defined in style() in animate()) or in other words, NOT just animating the chainging of border-radius and then INSTANTLY
 JUMP to the end state.
 For doing that, we need to replace the animate() function with an array.
-Learn: We can pass an array as the second arg of transition() and in that array, we can define starting and in-between states, during
- the transition. So we can pass style() there. //TODO till 2:00
+Learn: We can pass an array as the second arg of transition() and in that array, we can define starting and in-between states, DURING
+ the transition. So we have general start and end states which animation takes place between them, but the animation itself has also
+ starting and ending states, because animation itself has also styles during it's happening and therefore we need to animate the
+ transition from styles of animation and styles of ending state(the general state) which animation ends there.
+ So we can pass style() in array that we pass as second arg of transition().
+So I commented out the third transition and wrote another one.
+The first element of the array we passed as second arg of transition() in order to make the transition of styles of animation to
+ending general state, smoothly, is the style() function and the second element of that array is animate() function and in there,
+we place the styles that we want to smoothly change them during the transition of animation ends, to the ending state.
+Important: So in our case, we should INSTANTLY see background-color of orange, thereafter we should border-radius is developing or
+increasing(because any other state hasn't got any border-radius) over 1 second and thereafter we should see an animation of 500ms where
+during that time, we remove the border-radius again, then turn the element from orange to the background-color of ending state.
+
+Important: So when we pass an array to transition as the second arg, that array allows us to define different phases IN THAT transition.
+ So in our case, the starting phase is that
+    style({
+        'background-color': 'orange'
+      }),
+ and it instantly applied to the latest styles that we had on that animated element(which that latest state is the latest state of
+ that animated element, before entering that last transition which that transition itself has some phases). After that first phase,
+ we do animate, therefore we apply styles of the new phase but over some time, so it's smoothly applying and if we have animate() without
+ any styles in the last phase, that means basically transition to the GENERAL end state of the transition().
+ In other words, when you pass an array as second arg of transition(), we have different phases during that transition between general
+ states which those phases might have different styles and we can also define a smooth transition between those phases by using
+ animate() for each phase and also we can define an animate(x) which hasn't got style function in it, in order to make the transition of
+ last phase of our transition()!(in our case the last phase of transition was the border-radius) to the ending state, smoothly.
+ So we defined that animate(500), in order to make the transition of last phase of our transition, smoothly to the ending state which
+ that ending state is * or 'shrunken'(because of <=>).
+
+So the crucial thing in those phases of a transition() is that you END the process of adding styles to transition, by using an animate()
+function without any style, to get smoothly to the end state, otherwise it INSTANTLY snap back to the end state.
 -->
+<!-- 9. The void State:
+Currently we're able to animate elements that we already have in our html or code. But what if we want to animate the ADDITION or
+REMOVEMENT of html elements of our code?
+For doing that, we can add a new trigger() and it should be of course on the same level of other trigger()s in array of animations.
+There, we only have one state which is when the element IS in the DOM currently. The other state is that we don't have the element,
+because we(user) just removed it OR we JUST ADDED to DOM so it kinda should now APPEAR in the DOM and that state is handled by
+angular.
+So 'in' state is how the element should looks like once finally IS THERE(it's in the DOM).
+
+transform: translateX(0) means the place we ACTUALLY placed the element.
+
+The first transition() is for when the element comes IN the DOM, so when it's added to DOM. There, the end state is 'in' but
+what is the beginning state, where an element is adding to the DOM?
+Well, we could use the *, but there's a specific state for the case that the element hasn't been yet added to DOM, which is 'void'
+state. So 'void' is a reserved state name that you shouldn't override it.
+Learn: So 'void' state is provided by angular, for cases where you do have an element and an end state which that element wasn't added
+ to DOM at the beginning and of course you can add 'void' to end state, when you remove an element from DOM.
+
+So with transition('void => *', animate(300)), the element should slowly appear to the DOM and we can see this animation by going
+to where the element lives, for example <li> and on that, we add: [@<name of trigger without any quotes>] and we don't need to bind
+that to anything. Because I don't CARE what the state currently is and 'in' state that we defined is just a dummy thing there.
+Of course we could have some logic in our code which changes the state of our <li>s (changes the state of element that we defined
+the animation on it), but for the entering animation or in other words, when we add a new <li>, I don't care what the initial state is and
+therefore I never set it in our code and I never apply the 'in' state and I don't set a property for managing the state of elements that
+need that state to use that animation. Because we want to animate from 'non existant' or 'void' to any state(*). Therefore we don't need
+any state or state management prop for that trigger().
+
+But right now if we try to add a <li> which has that animation to the DOM, it's not working. Why?
+The issue is that we have no starting state. So we need to define a state() for 'void' right? NO!! It doesn't work that we set up
+the starting state which in this case is 'void' like this:
+
+EX) trigger('list1', [
+  state('in', style({
+    opacity: 1,
+    transform: translateX(0)
+  })),
+  state('void', style({
+    ...
+  })),
+  transition('void => *', animate(300))
+])
+
+This doesn't work in this case(but in previous triggers we have to define the starting state like that), but since 'void' state is
+kinda built-in state,it works differently and we need to set it's state differently.
+
+So as you can see, the 'in' state is a dummy state for the example below because we don't need it when adding or removing elements
+in this case(because we are using * not 'in' state, so in that case we would need that 'in' state).
+
+For doing that, in the transition() that you used the 'void' state, we must pass AN ARRAY as second arg of transition() where in there
+animate() is present, but BEFORE executing animate() in that second arg of transition(), we need to write another style() where I set
+the initial state of transition() itself and this style() will now be applied by angular RIGHT IN THE BEGINNING. So when we add a new
+element, it's appended to DOM and it will INSTANTLY get that first style() in the transition() by angular and then transition over
+x duration that we set in animate() in the transition() to it's final style which we set it in state() in example below
+EX) trigger('list1', [
+  // The style() functions that we write here can't be used for 'void' state.
+  state('in', style({
+    opacity: 1,
+    transform: translateX(0)
+  })),
+
+  // This is incorrect for void state:
+  state('void', style({
+    ...
+  })),
+  transition('void => *', [
+
+  // This style is for the 'void' state:
+    style({
+      opacity: 0,
+      transform: translateX(-100px) // It kinda flies in
+    })
+    animate(300)
+  ])
+])
+
+Also by using code above, when you refresh or enters this component, the elements that have this animation on them, would have that
+initial state for 'void' in other words, by entering the page, they would flies in.
+
+Now for deleting an element, let's add another transition(). For stying of ending state which is 'void', we need to do it in the last
+phase of transition() which we defined those phased in second arg of transition() which is an array.
+But for defining the styles of final state, we can define that final style in last animate() of transition() . But will we
+get that instantly changing the styles when transit from final phase of transition to final state problem?
+NO! Because in this specific case we don't have that problem of snaping to end state because the style() that we're defining there in
+the last phase of transition() is actually our FINAL STATE! Why? Because the final state is void and we know that we define the style() of
+a void state in the transition which is inside the transition() of that second arg array. So we are ACTUALLY defining the styles of final
+state so we won't have that problem.
+
+transition('* => void', [
+  // In this case we don't need to define style() for the starting state(because the starting state is not 'void' but other states which
+  // the styles of those states are set inside their state() not in first arg of transition() which is where I commented below)
+  //  style({
+  //    opacity: 0,
+  //   transform: translateX(100px)
+  //  })
+
+  // Here we define the styles of void state(when this happens? When the void state is our final state)
+    animate(300, style({
+      // Styles that we would have in the end state and to get that styles it takes 300ms:
+      transform: 'translateX(100px)',
+      opacity: 0 // Fade out transition(fade out happens when the final state has opacity of 0)
+    }))
+  ])
+
+Important: Fade out happens when the final state has opacity of 0 and fade in happens when the starting state has opacity of 1 which
+ both happens over time.
+
+These examples can used for *ngIf which we also have the behavior of some new elements being added to the DOM. -->
+<!-- 10. Using Keyframes for Animations:
+We can have a more detailed control over the individual steps during the animation process, we already saw that we can define multiple
+phases inside each transition() as the second arg of that transition() which that second arg is an array of multiple phases of that
+transition() which each phase can have animate() and for second arg of animate() we can define the styles for that phase.
+
+And when we define multiple phases, each phase gets the same importance. It would be nice if we could define some keyframes to
+specificly say: "ok, you animate over 1second. Duration that 1 second, after 200ms you should have this state, after 500ms you should
+have this state and ... ."
+
+So when we specify an array for second arg of transition() we're defining some equally weighted phases. But instead, we can still
+pass an array there, but there, in the animate() function, we use the keyframes() as the second arg of animate().
+Learn: Now the keyframes() in animate(), allows us to be more precise about which part of multiple styles that we set up, should occur
+ at which timing. For example in animate(1000, keyframes()) , the overall animation will take 1 second but with keyframes(), now we can
+ control which state INSIDE of that animation should take how long. Therefore we would have an array in keyframes() and in that array
+ we would have individual phases.
+In this example in keyframes() we are saying, when the element entered the DOM, it should comes in from -100px of x-axis with 0
+opacity.
+Now we want another style, during that fly-in animation(because we're still in the transition of void to *-so we're still in fly-in
+animation). So let's add another style().
+
+Now if you see the entrance animation, it starts slowly going in, but at near the real place of element, it goes very fast!
+The reason for that is that by default all of the steps in keyframes() take long EQUALLY. In this case, we have 3 style() in keyframes()
+and every style() is triggered after the another and each one is taking 1/3 second. Because we have 3 style() and the overall animate,
+takes 1 second.
+Learn: So by default, the overall time of animate(), distribute by each style() in the array of keyframes().
+But we can overwrite that default, by passing the offset prop to the object we pass to style().
+In offset, we say at which timing of our overall time of animate()(which in this case, the overall timing of animate() is 1second),
+should we be at that style().
+Important: 0.3 means at 30% of that animate() time.
+
+Learn: Now for getting rid of that jumping of added element to it's place that we have currently, we can add a final style in array of
+keyframes().
+
+EX)
+trigger('list2', [
+  state('in', style({
+    opacity: 1,
+    transform: 'translateX(0)'
+  })),
+
+  // Coming in:
+  transition('void => *', [
+    animate(1000, keyframes([
+      style({
+        transform: 'translateX(-100px)',
+        opacity: 0,
+        offset: 0
+      }),
+
+      // Halfway to the actual place of element(because the end is translateX(0) which for example 'in' is our final state-the 'in' state
+      // is one of the * states):
+      style({
+        transform: 'translateX(-50px)',
+        opacity: .5,
+        offset: 0.3
+      }),
+      style({
+         transform: 'translateX(-20px)',
+         opacity: 1,
+         offset: 0.8
+      }),
+       style({
+         transform: 'translateX(0)',
+         opacity: 1,
+         offset: 1
+      })
+    ]))
+  ])
+])
+
+<li [@list2] *ngFor="...">{{item}}</li>
+
+So we can use keyframes() to PRECISELY control which style() we wanna have at which timing of animate(), during the transition().
+Important: The crucial thing is that keyframes() are for the DURING the transition. So over the times of animate()s in one transition().
+Of course you can have multiple animate()s in one transition() and each animate() function can have multiple keyframes() .
+
+If we wouldn't have keyframes(), we needed to write multiple animate()s. Let's say we want an animation takes 1 second. So we need to
+write multiple animate()s which each takes some time and sum of those times, would be the overall time of animation and in each
+animate() would have different styles for itself.-->
+<!-- 11. Grouping Transitions:
+For animating the removement of an item, let's say we want it have 2 different animations(so we can add 2 animate() functions for a
+transition()) which each one takes a different amount of time.
+Now if you add another animate() after the first animate() which at that first animate() we have a style which is opacity: 0; ,
+you wouldn't see that item during the second animate() or animation. Because, well, during the first animation we completely make
+that item transparent and any other styles after that animation wouldn't be visible to us! So the animated element would be invisible
+BEFORE we see the color turned to red.
+For solving this problem, we can switch the order of those 2 animate() functions. So instead of this:
+
+EX) trigger('list1', [
+    transition('* => void', [
+      animate(300, style({
+        transform: 'translateX(100px)',
+        opacity: 0
+      })),
+      animate(300, style({
+        transform: 'translateX(100px)',
+        color: 'red'
+      }))
+  ])
+
+We need to write this:
+EX) trigger('list1', [
+      animate(300, style({
+        transform: 'translateX(100px)',
+        color: 'red'
+      }))
+  ]),
+  animate(300, style({
+    transform: 'translateX(100px)',
+    opacity: 0
+  }))
+])
+
+So now in the animation, the item first turnes to red and also moves to right, then it would get the styles of second animate()
+over the specified time.
+
+But what if we wanted both animate()s at the same time, but with different timings?
+Learn: So we don't wait for the first animation to finish before starting the next, which is the default behavior when having multiple
+ animate()s.
+For that we can use group(). In group(), we pass an array of animations(animate()s) that we want to perform SYNCHRONOUSLY, or at
+the same time.
+EX) trigger('list1', [
+      group(
+        animate(300, style({
+          transform: 'translateX(100px)',
+          color: 'red'
+      }))
+    ]),
+  animate(800, style({
+    transform: 'translateX(100px)',
+    opacity: 0
+  }))
+])
+      )
+
+Now those 2 animate()s are happening both at the SAME TIME.
+I gave the second animate() a longer time so it turns red and takes other styles in 300ms which the second animate() is also happening
+with the first one but slower(because it takes 800ms!)
+
+So we use group() to group multiple animations(or animate()s) with possibly different timings(because if the timings are the same,
+why the hell we're using multiple animate()s? We can merge them in one animate()!), to have them happening at the same time.
+
+12. Using Animation Callbacks:
+There are a couple of callbacks that you can LISTEN to them, with doing that, when an animation finishes, you can execute some other
+code.
+For that, go to the where the element that you want them to listen those callbacks, lives and set up event binding but with @ sign,
+why @ sign?
+In order to indicate we're in an animationable and there we have the .start: (@<name of trigger>.start) and the
+((@<name of trigger>.done) triggers(or events??? TODO).
+The start method will be executed whenever the animation starts and we bind them to a method(WHY?
+Because we have an event binding there). Let's see what's inside $event which is exposed by angular to see what's inside of it in
+that case.
+Also I want to listen to the finishing of animation by using the .done event on our trigger.
+
+<div [@divState]="state"
+ (@divState.start)="animationStarted($event)"
+ (@divState.end)="animationEnded($event)"></div>
+
+App.component.ts:
+animationStarted(event) {
+  console.log(event);
+}
+
+animationEnded(event) {
+  console.log(event);
+}
+
+So these callbacks are useful, if you have some code which animates sth but after the animation finishes(or when it starts) you
+wanna execute some other code and you can do that by listening to built-in start and done events on the trigger of animation-->
 
 <!-- RXJS youtube academind:
 RxJS what and why?
@@ -1546,8 +1863,7 @@ RxJS6:
 switchMap():
 It allows us to trigger some value emissions, whenever ANOTHER obs emits a value.
 
-An interval, is an obs which emits a new value every x milliseconds.
--->
+An interval, is an obs which emits a new value every x milliseconds.-->
 
 <!-- My notes:
 Important: When a router navigates to a route that renders the same component, the component isn't initialised again.
@@ -1595,5 +1911,13 @@ it is important to change the array itself, not just mutate its content. So it i
 in order to change it completely. For example:
 array = [...array, newItem];  // This won't update the array completely: array.push(newItem);
 
-So stick to that rule then your pipe will behave well. -->
+So stick to that rule then your pipe will behave well.
+-------------------
+If you're using a library in your angular application and you want yo style some parts of that library or package, PROBABLY you
+must put those styles in styles.scss file not the scss file on the component which is using that library.
+-------------------
+
+
+
+-->
 
