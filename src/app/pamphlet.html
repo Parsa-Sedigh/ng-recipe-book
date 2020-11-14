@@ -1248,8 +1248,96 @@ That's an alternative for adding that service to your app.module providers array
 
 The bootstrap array is crucial for starting your app. It defines which component is available right in the index.html file
 (in index.html , we instantiate app component and therefore that is the component for starting the app) and typically you only
-have one component there. You could have multiple components in index.html but then each component would kind of be detached from
-the other components. TODO till 3:00 -->
+have one component there. You could have multiple components(which is why bootstrap is also an array) in index.html but then
+in that case, each component would kind of be detached from the other components. In other words, in that case(when we
+have multiple bootstrap components), you would create different root component trees in your application and that's rarely what
+you want. Because by doing that, it makes working those components way harder.
+So therefore, you typically have one root component and you add it to bootstrap array, which by default that root component is
+AppComponent.
+
+Also we have entryComponents array in there. That array is crucial for components you create IN CODE, as you learned in dynamic
+components section, that entryComponents allows angular to be aware of that dynamic component when it(angular) needs to create it
+programmatically.
+Also currently we have app-routing.module which we also added it to imports array of app.module file.
+
+The AppRouting module is there to hold our route configuration. We absolutely could add all of that code in AppRoutingModule file to
+AppModule file, but we only outsourced it because that's quite a lot of code and by doing that it keeps our AppModule a bit leaner
+and that's already one of the reasons for why you might want to split pur application into multiple modules. It can make your
+existing modules leaner and more focused and easier to edit and maintain.
+
+The app-routing module imports the RouterModule that angular offers us in its' imports array of object that we pass to @NgModule()
+and also uses a special method offered by that module(RouterModule) which is forRoot() and this method takes our route configuration
+to configure the angular router with our route config and then sth crucial happens.
+In the next line of that imports array, we export that RouterModule from app-routing module. Why?
+Learn: We need to do that, because every module works on it's own in angular and they don't communicate with each other. So if you
+ declare a component in a certain module like app module(when I say declare it in a module it means add it to declarations array of
+ that module), we can ONLY use it in there and no where else.
+ So when we declare a component in a certain module, we can use the selector of that component in other components of that module and
+ not other module.
+
+For smaller applications, we need our route configs which are passed into .forRoot() of AppRouting module to be available in
+app.module file. In order to do that, we have to export the RouterModule which has our route configs, so that's not just available
+in the app-routing module which won't be helpful at all, but by importing it in imports array of app.module, we make it available
+in that module and available in components and ... that we declared in that app.module too.
+
+Learn: So when we import module1 in a module2, we import everything that module1 exports in it's exports array.
+
+So this was how you can configure RouterModule which ends up in the AppModule and is available in that module. This was for
+small applications.
+
+Also splitting modules is for enhance performance, not automatically by splitting components, but splitting components will be
+a crucial PREREQUISITE to THEN also enhance performance. -->
+<!-- 4. Getting Started with Feature Modules:
+When we're working with multiple modules, instead of having one big app.module , we can split that into an app module that defines
+our app.component and then we have 2 separate new modules which are called feature module
+
+So instead of having this:
+
+  AppModule                    AppModule            ProductsModule (feature module)
+AppComponent                  AppComponent            ProductListComponent
+ProductListComponent                                  ProductsComponent
+ProductsComponent         =>                        OrdersModule (feature module)
+OrdersComponent                                       OrdersComponent
+HighlightDirective                                    HighlightDirective
+....
+
+A feature module groups components, directives, pipes that are used in a certain feature area of your application.
+Splitting your app into such feature modules is the prerequisite for performance improvements and that also ensures that when other
+developers work on your code, you quickly know where to look for the setup for that specific part of your app.
+
+Now which features we have in our project?
+Recipes feature area, shopping list feature area and auth feature area where we have all the components and all the logic related
+to authentication.
+The header and the shared components are not really the features of the app, because the header component is part of the
+app component, we do render it there. So the header component definitely belongs to the root of our application(app component)
+and regarding the shared components, IN THIS APP(not bigger apps) we might only use certain features in certain parts(and not all of the
+parts) of the app, for example we only use the alert component in just auth component and no other places, but it would make sense
+that we share that alert component across different features of our application. Because you COULD showing an alert in recipes area as
+well when you failed to load recipes.
+So the alert and the shared things, we'll take care of them later and they're not really a feature of this app so they don't need a
+feature module for themselves.
+
+For creating recipes module, first create a recipes.module.ts file. So just like we have the app.module for our GENERAL application,
+so in app.module the core is setup for entire app, we now have recipes.module which should be responsible for defining the building
+blocks of the recipe feature area.
+@NgModule takes an object to configure that module. Now let's cut all of the recipes related components from app.module and move
+them to recipes.module file , but it's not suffice. Because the question now is:
+How we can now use our RecipesModule in the AppModule?
+For that, add the exports array in the recipes.module file and export all of the components which we declared in that recipes module,
+with that, now the things that we exported are also accessible in any module that imports the module that those things are
+exported from that module and that could be app module too. So now, add the RecipesModule in the imports array of app.module .
+Also don't forget to import that RecipeModule file in app.module and also don't mistake it with the imports array in NgModule({})
+is there for angular to add features of other @NgModule()s into that @ngModule(), but the import {} ... from ...; statement is a
+TS feature to tell TS where to find that type that it sits in another file and that statement has nothing to do with angular.
+
+Now if the app compiles, we get an error which says: 'router-outlet is not a know element.' and the problems is that in the
+recipes.component, I am indeed using the <router-outlet> there, the problem is that the <router-outlet> is a directive provided by
+angular and it's not magically! available in the entire application. It is available by RouterModule which we imported it in the
+app-routing module file.
+Learn: So RouterModule is not just there to configure our routes, it also add routing features like the routerLink directive which
+ we use to add a link or the router-outlet directive.
+
+Now because we exported RouterModule from the app-routing module file  TODO till 7:45-->
 
 <!-- 26. Angular Animations:
 We can use the animation system of angular in order to for example render adding items to a list or the conditional attaching or
@@ -1821,6 +1909,44 @@ wanna execute some other code and you can do that by listening to built-in start
 
 <!-- RXJS youtube academind:
 RxJS what and why?
+For using rxjs, first we need to install it and for this case, I won't use npm because the instructor sticks to a web based editor
+(jsbin.com) and he used a cdn link and in that cdn link remove the @version in order to get it automatically replaced with the latest
+version of that library. Then at the end of the <body> say: <script src="<link to rxjs cdn with replaced @version with nothing-which
+gives us the latest version>"></script>
+Then create a <button> and select it.
+const button = document.querySelector('...');
+
+The vanilla JS way o handle click events:
+// React to clicks on the button(because we added an event listener on the button not document or ...)
+button.addEventListener('click', (event) => console.log(event));
+
+Now let's rebuilding that using rxjs:
+So instead of using addEventListener(),  we write:
+Rx.Observable.fromEvent() , which this, creates a new observable based on an event source which we need to specify that event source
+in parentheses of fromEvent() . In this case, we specify button variable, which is where we I want to listen to that event and then
+we specify the type of that event as a string.
+Now with that, I already got my observable, BUT NOTHING WOULD HAPPEN RIGHT NOW! Why?
+To react to an event, we need to subscribe to that observable which is coming from that event.
+The first function that we can pass to subscribe() gets the event data(in this case). So the result of this code is exactly as
+the prior code with addEventListener() and it's callback that we passed to it.
+Rx.Observable.fromEvent(button, 'click')
+  .subscribe(
+    (event) => {console.log(event);}
+  );
+
+By using observables, we have a funnel-like setup. So our event data travels from top to bottom, so from data source which we specify
+that data source in the fromEvent() which in this case that data source is the click event on the button variable, to the code that we
+execute in the subscribe() (that is the bottom!). In this case that funnel is very short.
+
+The powerful thing about observables is the operators, which allow you to transform the way that the data is handled, used or
+looks like, immensely.
+
+EX) let's say we want to MAKE SURE that we only react to click events, once a second. So if the user SPAM(rapidly clicks on that
+button which is the data source) that button, we omit or we drop all of the events which happen more than once a second.
+TODO till 5:30
+
+---------------------
+Observables, observers and subscriptions:
 An observable is basically a wrapper around some data source and data source typically means a stream of values.
 So we have that stream data which possibly is asynchronous, so async data source is possible multiple values over time and
 now we want to do sth whenever a new value of that data source occurs. This is the job of observer.
@@ -1851,10 +1977,6 @@ Important: So the observer has 3 methods where we can handle any values in those
 
 In subscribe() we pass the observer.
 The subscribe() method takes 2 possible args.
-
----------------------
-Observables, observers and subscriptions:
-
 ---------------------
 RxJS operators like map() or throttleTime():
 ---------------------
@@ -1913,11 +2035,150 @@ array = [...array, newItem];  // This won't update the array completely: array.p
 
 So stick to that rule then your pipe will behave well.
 -------------------
-If you're using a library in your angular application and you want yo style some parts of that library or package, PROBABLY you
+If you're using a library in your angular application and you want to style some parts of that library or package, PROBABLY you
 must put those styles in styles.scss file not the scss file on the component which is using that library.
 -------------------
 
 
 
 -->
+<!--  TODO paste this text in pamphtlets in mac:
+4 different ways to share data between angular components
+1) parent => child : via @Input()
+When you declare a prop via @Input() in the child component, that decorator allows that prop to BE RECEIVED FROM THE PARENT
+COMPONENT TEMPLATE file. After declaring that prop in child component, you can go to parent component's template and bind that
+@Input prop to some code which will return sth to that binded @Input prop or just bind to a value.
+Important: You can ONLY bind to the child component's @Input props not other props of that child component and ALSO you can
+ only bind to that @Input() prop of child component, on INSTANCE of the child component in it's parent's template. For example:
+child component.ts:
+@Input message: string;
+
+child component.html:
+{{message}}
+
+Parent template:
+<app-child [<name of @Input of the child component or the other name of @Input prop that you specified in () of @Input>]=
+"<some prop or code of this parent component>"></app-child>
+
+2) child => parent : via @Output() and EventEmitter<>()
+In this case, we're emitting data from child component which that data can be listened in parent component.
+This approach is ideal when you want to share the data changes that occur on things like button clicks, form entries and other
+user events.
+In this case, we declare an event prop in the child component with @Output and set it equal to: new EventEmitter<>() . Then
+we create a method in that child component that calls .emit() on that event prop and in () of that .emit() we put the data that
+we want to emit or send to parent component. Then we create an event listener like (click) and bind it to our newly create method
+which that method calls .emit on our EventEmitter<>() prop.
+So when that event triggered(in this case the (click)), our method will be called and it would call .emit() on the EventEmitter()
+and that EventEmitter() will send the data to parent component.
+Now we must receive that emitted data in parent component.
+
+In parent we create a method to receive that emitted message from child and of course it must have a parameter to actually
+receive the emitted data in that parameter and then you can create a prop in that parent, in order to save the data which was
+emitted from child.
+Now we must somehow call this newly created method in parent. But where? In template of this parent component and again on
+the instance of the child component and there, we use event binding syntax and bind to the name of the EventEmitter prop of
+child component and then when that event triggers, we execute some code, which that code is that newly created method in parent.
+Why when that event of child triggers we execute that newly create method of parent?
+Look at the example: Because we want to RECEIVE the data which would emitted by the
+EX)
+child component.ts file:
+@Output() messageEvent = new EventEmitter<string>();
+
+sendMessage() {
+  this.messageEvent.emit('hello');
+}
+
+child component.html file:
+<button (click)="sendMessage()"></button>
+
+parent component.ts file:
+receiveMessage(data) {
+  this.message = data;
+}
+
+parent component.html file:
+<app-child (messageEvent)="receiveMessage($event)"></app-child>
+{{message}}
+
+3) child => parent: via @ViewChild()
+@ViewChild() allows one component to be injected into another, which causes the parent component to gets access to all of the
+props and methods of child component. However one caveat is that the child component won't be available to parent until after the
+view is fully initialized. That means we need to implement AfterViewInit to receive the data from child. Then in body of parent
+component, we use @ViewChild(<the name of import statement of child component>) <name of prop> and then inside ngAfterViewInit(){}
+we have access to all props and methods of the child component which we can access them by using the prop that we choose for
+@ViewChild()
+EX)
+child component.ts:
+message = 'hello world';
+
+parent component.ts file:
+import {ChildComponent} from '...';
+...
+
+@ViewChild(ChildComponent) child;
+message: string;
+
+ngAfterViewInit() {
+  this.message = this.child.message;
+}
+
+4) any => any: Share data between any unrelated components:
+When passing data between components that lack a DIRECT connection, such as siblings, grandchildren and ..., you should use a
+shared service. When you have data that always need to be in sync, BehaviorSubject() is very useful. The benefit of this kind of
+subject is that it ensures every component that is consuming the service which that Behavior Subject is in it, receives the
+MOST RECENT UP TO DATE data.
+For doing that, in the service we create a PRIVATE BehaviorSubject<>() that will hold the CURRENT data which you want to
+share that data. Then we define a current<name> property in that service which is set to an observable which will be used by components.
+Then we create a method in that service which it's job is to call .next() on that BehaviorSubject() to change the current value of
+that BehaviorSubject and the name of method can be: change<main name of prop>.
+
+The parent, child and sibling components all receive the same treatment. Now for example let's go to any component that needs this data
+and also needs to get the latest value and inject this service in it's constructor. Then subscribe to the currentMessage
+observable and in it's first arg, we would receive the message string and then we can save that received value inside a prop of
+that child component.
+Now we can create a method in ANY of those components which subscribed to that BehaviorSubject() and that method would change the
+data that we share between those components. But how it will change that data?
+That method will call the changeMessage() method of service which that changeMessage() method calls next() on the messageSource and
+we will pass the new data which that data will automatically broadcast to all of the components that subscribed to the currentMessage.
+For example let's do that in parent component.
+
+EX)
+The data.service.ts file:
+private messageSource = new BehaviorSubject<string>("default value");
+currentMessage = this.messageSource.asObservable();
+
+changeMessage(message: string) {
+  this.messageSource.next(message);
+}
+
+child component.ts file:
+message: string;
+constructor(private dataService: DataService) {}
+
+ngOnInit() {
+  this.dataService.currentMessage.subscribe(
+    message => this.message = message;
+  )
+}
+
+parent component.ts:
+message: string;
+constructor(private dataService: DataService) {}
+
+ngOnInit() {
+  this.dataService.currentMessage.subscribe(
+    message => this.message = message;
+  )
+}
+
+newMessage() {
+  this.dataService.changeMessage('Hello from parent');
+}
+
+parent component.html:
+
+<button (click)="newMessage()">Send message</button>
+
+After clicking that button in parent component, ALL of the components that are subscribed to that currentMessage will get the
+latest message.-->
 

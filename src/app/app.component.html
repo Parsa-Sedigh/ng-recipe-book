@@ -53,14 +53,15 @@ We nest the recipe-item folder inside recipe-list because a recipe item is just 
  to a property of component. The decorator in this case we want to use is @Input and here we need to execute it, like a function.
  So in the end of decorator add (). Now we need to import that decorator from '@angular/core'. So for example:
  @Input <property>: ...;
- With these things, now we are successfully exposing this property to the world! So now any parent component of this component
+ With these things, now we are successfully exposing this property to the world! So now any parent component of this component(child)
  which has a @Input() for it's property, is now be able to bind to that exposed property.
 
  When a component is parent of another component, we say that parent component is hosting that child component or is
- implementing that child component through it's selector.
+ implementing that child component through it's selector.(Of course if the selector of that child component is instantiated in
+ it's parent component.)
 
- IMPORTANT: You can only use the properties of a component in template of parent components JUST ON THE INSTANCE OF THAT
-  component not on other component. For example if the selector of component is: app-server and it's exposed property is
+ IMPORTANT: You can only use the properties of the child component in template of parent components JUST ON THE INSTANCE OF THAT
+  child component not on other component. For example if the selector of component is: app-server and it's exposed property is
   @Input x; and you want to bind this property in the parent component of this component, YOU MUST FIRST INSTANCIATE this
   component and then use this property on that instance not anywhere else.
   We instanciate a component by using it's selector.So if the selector is: 'app-server' , we instanciate this component
@@ -3186,7 +3187,7 @@ It's like manually creating a loop and calling removeAt() for every item.
 <div class="container">
   <div class="row">
     <div class="col-md-12">
-<!--      <app-recipes *ngIf="loadedFeature === 'recipe'"></app-recipes>-->
+<!--      <app-recipes *nsgIf="loadedFeature === 'recipe'"></app-recipes>-->
 <!--      <app-shopping-list *ngIf="loadedFeature === 'shopping-list'"></app-shopping-list>-->
       <router-outlet></router-outlet>
     </div>
