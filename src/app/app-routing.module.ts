@@ -1,13 +1,13 @@
-import {NgModule} from "@angular/core";
-import {RouterModule, Routes} from "@angular/router";
-import {RecipesComponent} from "./recipes/recipes.component";
-import {ShoppingListComponent} from "./shopping-list/shopping-list.component";
-import {RecipeStartComponent} from "./recipes/recipe-start/recipe-start.component";
-import {RecipeDetailComponent} from "./recipes/recipe-detail/recipe-detail.component";
-import {RecipeEditComponent} from "./recipes/recipe-edit/recipe-edit.component";
-import {RecipesResolverService} from "./recipes/recipes-resolver.service";
-import {AuthComponent} from "./auth/auth.component";
-import {AuthGuard} from "./auth/auth.guard";
+import {NgModule} from '@angular/core';
+import {RouterModule, Routes} from '@angular/router';
+// import {RecipesComponent} from "./recipes/recipes.component";
+// import {ShoppingListComponent} from './shopping-list/shopping-list.component';
+// import {RecipeStartComponent} from "./recipes/recipe-start/recipe-start.component";
+// import {RecipeDetailComponent} from "./recipes/recipe-detail/recipe-detail.component";
+// import {RecipeEditComponent} from "./recipes/recipe-edit/recipe-edit.component";
+// import {RecipesResolverService} from "./recipes/recipes-resolver.service";
+import {AuthComponent} from './auth/auth.component';
+// import {AuthGuard} from "./auth/auth.guard";
 
 /* By using pathMatch: 'full' in the first route, we're saying: only redirect us to specified route, if the FULL path is empty.
 * So we won't redirect to '/recipes' on any other path. Because the current path must be EXACTLY(FULL) '' to redirect us to '/recipes'.
@@ -24,13 +24,14 @@ import {AuthGuard} from "./auth/auth.guard";
 * So we must switch the order of these two routes.*/
 const appRoutes: Routes = [
   {path: '',  redirectTo: '/recipes', pathMatch: 'full'},
-  {path: 'recipes', component: RecipesComponent, canActivate: [AuthGuard], children: [
-      {path: '', component: RecipeStartComponent},
-      {path: 'new', component: RecipeEditComponent },
-      {path: ':id', component: RecipeDetailComponent, resolve: [RecipesResolverService]},
-      {path: ':id/edit', component: RecipeEditComponent, resolve: [RecipesResolverService]}
-  ]},
-  {path: 'shopping-list', component: ShoppingListComponent},
+  // I moved these to recipes-routing.module:
+  // {path: 'recipes', component: RecipesComponent, canActivate: [AuthGuard], children: [
+  //     {path: '', component: RecipeStartComponent},
+  //     {path: 'new', component: RecipeEditComponent },
+  //     {path: ':id', component: RecipeDetailComponent, resolve: [RecipesResolverService]},
+  //     {path: ':id/edit', component: RecipeEditComponent, resolve: [RecipesResolverService]}
+  // ]},
+  // {path: 'shopping-list', component: ShoppingListComponent},
   {path: 'auth', component: AuthComponent}
 ];
 

@@ -2,7 +2,7 @@ import {Injectable} from "@angular/core";
 import {HttpClient, HttpErrorResponse} from "@angular/common/http";
 import {Router} from "@angular/router";
 import {catchError, tap} from "rxjs/operators";
-import {BehaviorSubject, Subject, throwError} from 'rxjs';
+import {BehaviorSubject, Observable, Subject, throwError} from 'rxjs';
 import {User} from "./user.model";
 import Timeout = NodeJS.Timeout;
 
@@ -130,7 +130,7 @@ export class AuthService {
 
   /* In this method, we want to basically dive into the response, check it and then throw a new error observable, bu using
   throwError() function. */
-  private handleError(errorRes: HttpErrorResponse) {
+  private handleError(errorRes: HttpErrorResponse): Observable<any> {
     let errorMessage = 'An unknown error occurred!';
     console.log('errorRes is : ', errorRes);
 
@@ -138,6 +138,8 @@ export class AuthService {
     response can be vary, we need to check the structure in order to return a good error.*/
     if (!errorRes.error || !errorRes.error.error.message) {
       return throwError(errorMessage);
+    } else if (errorRes.name === 'HttpErrorResponse') {
+      errorMessage = 'Try again.';
     } else {
       switch (errorRes.error.error.message) {
         case 'EMAIL_EXISTS':

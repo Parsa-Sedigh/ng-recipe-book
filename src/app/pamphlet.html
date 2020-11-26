@@ -1337,7 +1337,231 @@ app-routing module file.
 Learn: So RouterModule is not just there to configure our routes, it also add routing features like the routerLink directive which
  we use to add a link or the router-outlet directive.
 
-Now because we exported RouterModule from the app-routing module file  TODO till 7:45-->
+Now because we exported RouterModule from the app-routing module file and since we imported it in app.module, in the app.module, that
+RouterModule and it's features are available. Now you might think, because RouterModule is available in app.module , therefore then it
+should also be available in the recipes module, because we kinda add recipes through that RoutingModule, right? I mean we go to recipes route
+through the help of the RoutingModule, BUT! this is not how it works.
+Important: Instead as I mentioned, everything in a module works standalone. So for example you can export some components from recipes.module
+ in order to be able to import those exported things, in another module let's say app.module, but that alone does not mean in the recipes module
+ you can use features which are made available in app.module . You can only export sth which then CAN(by importing it) be usable anywhere else,
+ but you don't automatically get access to other content. So when you import some stuff from module a to module b, in the module a,
+ you don't automatically get access to the things that were imported in module b.
+ So in the example that I mentioned, the recipes module and the components in there which are the things that we export them and import them in
+ app.module, got absolutely NO access to all things that we import in the app.module . So we don't have access to for example the
+ RouterModule that we imported in app.module, in the recipes module or the things in recipes module that we export them and import in
+ app.module . -->
+<!-- 5. Splitting Modules Correctly:
+There are couple of ways to fix that. One way would be that we simply import the RouterModule without .forRoot() , into our recipes module.
+Now if you do that, we still get an error because of app-recipe-item which uses ngFor and doesn't access to that, but the thing is, we don't
+get that routing error anymore. But the new error is related to *ngFor. Because again, when you create a ne module, we don't magically
+have access to all of the core angular features like *ngFor.
+Thus far we got all of those features, because we had everything in the app.module, we declared all components in app.module and we had crucial
+imports in the app.module which those imports, import core angular features into app.module and therefore any component declared in that module and
+was added to declaration array of that module, has access to those features. But components declared in other modules don't get access to those
+features and for example *ngIf and *nfFor are provided by BrowserModule or http related stuff can be imported by HttpClientModule, but this
+module is kind of an exception, because by importing this module, that would only provides services and no directives or components and
+services work differently and therefore indeed they're available application-wide, so even in modules where you don't import HttpClientModule.
+But as soon as you use sth which is not a service and offers real! directives or any features you use in templates, as soon as that's the case,
+you only have access to what you import in that module(so the services are exception in this context).
+So to be able tp use *ngFor in the recipes.module, besides RouterModule, we also need to import BrowserModule in our newly created module.
+BUT WAIIIIIIT!
+The BrowserModule is the only special case in this context and that is the BrowserModule MUST ONLY BE USED ONCE and that is in the
+app.module, because it does more than just add *ngIf and ..., also it does some general application start up work which only has to run
+ONCE!
+Learn: So when you need some stuff like *ngFor and ... in a new module, instead of importing the BrowserModule, use the CommonModule in those
+ places. So instead of using BrowserModule, we use CommonModule in all other places of app.module .
+Now with that imported, we unlock *ngIf and *ngFor and now if you see the page, we again get an error but a different one. This time,
+the problem is the FormGroup directive and as I mentioned, you only have access to what you import in a module and we're not importing
+the FormsModule or in this case actually ReactiveFormsModule, because we're using reactive forms in that module, not the error is gone.
+
+So the crucial things is whatever you declare in that new module and whatever you use in the templates of the components or in services or ...,
+has to be imported in that new module and it's not enough if you import those features in app.module, the only exception to this rule are
+services, the services only need to be setup ONCE IN THE app.module and then you can access them in your whole application, even in components
+which you added to feature modules. But anything that's used in a template of components or .ts files of components, directives, pipes , those
+things need to be declared or imported into the module where you plan on using them and it's not enough to use those things in another module,
+EVEN if you export those things to the other module you want to use them, so it's not enough. So angular treats and parses every NgModule
+STANDALONE.
+
+6. Adding routes to feature modules:
+The only thing we're doing thus far is we're outsourcing our recipes component declarations in a separate module. So with that the app module is
+a bit leaner, but we can do more than that. We can also move the recipes related route configuration, away from the app-routing.module into our
+recipes module. For doing that, in recipes.module and in imports array of that and where we imported RouterModule, we call .forChild() on the
+RouterModule.
+
+Remember: forRoot() is only used ONCE essentially, where it was in app-routing.module and we called it to configure our root routes.
+But in a feature module like recipes.module , which you plan on importing that feature module into your app.module , you should use .forChild() and
+that will automatically merge the child routing configuration with the root routes.
+Now in that feature module you can use .forChild() and pass the routes configs of that feature module to () of .forChild() , which we also
+did sth similar to .forRoot() (but then we moved those configs to app-routing.module and we will do that for feature modules too!).
+Now to keep that feature module leaner, we can again create a separate module which is <feature>-routing.module and we only did this, in order to
+really focus on route setup in that new file and not clutter the recipes.module.ts file with those route configurations.
+Now let's cut all of the recipes related routes with their nested routes from app-routing.module and move them to recipes-routing module.
+
+Then in the object we passed to @ngModule() of new created module, we have to add the imports array and in there add the RouterModule and as
+I mentioned, you need to call .forChild() on that module(so as you can see, it doesn't matter where we set up our route configs, so it doesn't
+matter we set them up in recipes.module or outsource them to recipes-routing.module , you HAVE TO call .forChild() on RouterModule and in
+() of .forChild() you need to pass your route configs or the variable that holds your route configs.).
+Then we need to export that RouterModule, so add exports array in that object you passed to @ngModule() of newly created module and in there
+add RouterModule.
+
+So we exported that RouterModule from recipes-routing module, so now in the recipes module we can actually import our RecipesRoutingModule which
+we exported from recipes-routing.module . Why?
+Important: Because the feature module needs to have access to feature-routing module file. So we had to export them from feature-routing module and
+ then import them in feature module.
+Now we are adding the routes config of feature module into that feature module but also we currently are importing that feature module into
+app module and since we registered our recipes related routes in that recipes module, those routes should still be part of our general routing
+config. The routing config is now just split across two files.
+
+So now we manage all recipes related things(including recipes related routes) in our recipes module and not anywhere else. -->
+<!-- 7. Component Declarations:
+A crucial not about components we load via routing:
+For example the recipes.component is loaded whenever we visit /recipes and the recipes component is declared in recipes.module .
+Now if you remove it from declarations array of that module, now the app doesn't work and the error says: Component RecipesComponent is not
+part of any NgModule or the module has not been imported into your module. So it's really crucial to understand that it's not enough to just
+point at the component you want to load when we navigate to that url, but also you need to have it at declarations array of that module.
+
+The other thing is now that we manage the loading of our components via recipes-routing module and in no other module, there's no reason
+to still export those recipes components because we're now ONLY using them internally in the recipes module and no other module and in recipes
+module we use those components either embedded into other components of that same module or by loading them through the recipes-routing.module and
+either cases, both the files are part of this module(recipes module). So there's no reason to export the recipes components anymore because
+because we're not using those recipes components that we were exported in other modules. So I commented out those exports.
+
+8. The shopping list feature module:
+So that was our first feature module which was the recipes module.
+First in the shopping-list folder, let's create shopping-list.module.ts . Then in the object that you pass to @NgModule(), you have
+to declare what you're using in that module and also you have to export what you're using elsewhere. In other words, you have to export
+the things which are inside this module buy you're using them our of that module(but this step is after we actually import the things that
+we're using in this module by cutting them in the module(probably app.module) that they were before and cut them in our new module and after
+doing it, we can see what we're using out of the shopping-list module and then export them and import them in the module that we're using them.)
+Now let's go to app.module and CUT shopping-list.component and shopping-edit and paste them in declarations array of shopping-list.module .
+
+Now we could import that shopping-list module into the app.module and of course before that we also have to make sure we add all things that the
+shopping-list components need, into the shopping-list module. Now also we want to manage routing in the shopping-list module as well and in this
+case we don't want to create a new module for routing of shopping-list module. So let's grab the routes related to shopping-list module and
+paste them in .forChild() of RouterModule in the shopping-list.module .
+
+Also we don't need to export the RouterModule from shopping-list module, because we only do this when we had a separate Routing-module for that
+feature module. Also we need to import CommonModule and also FormsModule(because we're using template driven approach in the components that are
+declared in shopping-list module).
+
+Now let's go to app.module and add the new feature module there.
+
+9. Understanding the shared module:
+We had a look at feature modules, now let's know about shared modules. Now what's a shared module?
+In this diagram of an app, we got 2 feature modules and of course we would also have an app module and as you can see these two modules only
+differ in one component and all the other components and directives that they use are essentially the same.
+So you can put those shared features, shared components, directives and even other modules into a shared module which then you have to
+import that shared module into both feature modules. So the initial modules are:
+
+                      shared modules
+         ProductsModule             SalesModule
+        ModalComponent              ModalComponent
+        DropDownDirective           DropDownDirective
+        FormsModule                 FormsModule
+        ProductsComponent           SalesComponent
+
+and after creating and moving the shared things to that shared module and then importing the shared module into feature modules we would have:
+
+                      shared modules
+               ProductsModule            SalesModule
+                              SharedModule
+                ProductsComponent         SalesComponent
+
+Currently, in our app, we have no real shared feature across our feature modules and if you look at the shoppingListModule and RecipesModule,
+the only thing they have in common is CommonModule which unlocks *ngIf and ... . Now we COULD put it into a separate shared module and we will
+do it but this alone would not be worth it because then we just import our shared module which that shared module has to export the things it
+exposes to module that import it which in this case CommonModule.
+Important: The things that module1 exposes, must be listed in the exports array of that module and without doing that, if you import that
+ module into another module, actually it won't have anything to expose!
+
+But we also have the alert, loading-spinner, placeholder and the dropdown directive as shared stuff. But the data-storage service is not a
+shared thing, because important: Services are special in the shared context.
+Now let's create a shared module in the shared folder. Also remember you can have multiple shared modules and therefore they don't have to be
+named shared.module , but if you have only one shared module, it makes sense giving it's name as shared.module , otherwise you should give them a name
+that kind of summarizes the features that you're grouping those features in that shared module.
+
+Now the crucial thing is that you still now declare and import anything into this module that might be used by other modules but since
+every module works standalone, in order to make those things available in other modules, you need to export those things from that module in order
+to other modules be able to receive them by importing that other module.
+Also don't forget to add the modules that the components or ... of that new module need them, in the imports array.
+
+Then since we don't want to use the features(components and ...) only in the shared module, but also we want to import that module into
+other modules, we have to export those features and also the CommonModule(because we needed that CommonModule in some of our modules,
+therefore I added it to sharedModule, although the sharedModule itself needed that CommonModule-but because other modules needed that
+CommonModule, we also added it to exports array of sharedModule, so with that, moreover of the components and ... that we added to exports
+array of shared module, we also export the CommonModule and other modules by importing that SharedModule, have access to CommonModule, so
+we can delete the CommonModule from those modules) in that module.
+
+Now if you import the SharedModule into another module, you get an error which says:
+The dropdownDirective is part of the declaration of 2 modules.
+Important: The error that we get is because you can only define components, directives and pipes ONCE. You can't do that multiple times.
+ But you CAN import a module into multiple modules(and that's a good thing! Because it means you're elemanating duplication). So it's fine if we
+ import the RouterModule in RecipesModule and also in ShoppingListModule they are OK.
+ So multiple imports are OK, but multiple declarations not!
+ So for example if you declare ShoppingListComponent on the ShoppingListModule, you MUST NOT declare it anywhere else even if you need it in
+ another module. The obvious solution is to export it from where it's declared and import it's containing module into the module that you need
+ that component or ... .
+Now if you delete the duplicated stuff that we already have them in sharedModule, from app.module, you notice we have entryComponents array in
+app.module with that duplicate component. So you can add the duplicated things in app.module and add them to entryComponents array of
+sharedModule.
+At the end we need to import SharedModule in app.module, because we need those features in app.module for example in HeaderComponent of
+app.module , but we couldn't declare them again in app.module and therefore we delete them and add them to SharedModule, now we need to import
+that SharedModule in app.module .
+
+Also even if you don't actually add the duplicated stuff in a module but still import them with TS import statement, angular will throw error.
+
+So we use exports and imports array to share the stuff that are in one module to another module. -->
+<!-- 10. Understanding the core module:
+module types: 1- feature module 2- shared module 3- core module , the thing that is different between these modules is the stuff we put in
+them and how we use those modules.
+After feature modules and shared modules let's look at third crucial module type core module.
+
+The core module exist to make the app.module a bit leaner. For example let's say in the app.module, we have the app component and also
+we're providing two services. Then we can use a core module to move those services out of the app.module into core module which then that
+core module needs to imported back to app.module (because we're using those services in app module but we just outsource them in other
+module.)
+Learn: The alternative to that is to use providedIn in the object that we pass to @Injectable() on the services which that means we don't have to
+ add them(services) to providers array. But if you add it to providers in the appModule, well then using a core module can be an idea to keep your
+ app.module leaner. Use provided in pattern because it's recommended. But if you do provide your services in providers array of app.module(means you
+ didn't use providedIn: 'root' pattern), then this is a pattern you want to use:
+
+
+AppModule                             AppModule          CoreModule (or use providedIn prop)
+                                                          ProductsService
+AppComponent                          AppComponent        AnalyticsService
+ProductsService       ->              CoreModule
+AnalyticsService
+
+Now in our app.module and in it's providers array, we have the ShoppingListService and RecipeService and our interceptor and the reason
+we have those services there is that we didn't use providedIn: 'root' in the files of those services.
+
+The idea behind the core module is that we simply provide all the application-wide services(including the services that are currently in
+providers array of app.module and therefore are application wide and also the services that have providedIn: 'root') that are crucial
+right from the start of the application, in a separate module which we then import it inti the app.module and this task is just to
+keep the app.module leaner and to have a way or a place where we can quickly see all the core services of this app(because those services in
+core module are all application-wide).
+
+As I mentioned, that core module only make sense or is only a pattern you may use, if you're currently providing a service by adding it's type
+to the providers array of app.module . BUT if you're providing a service by passing an object to @Injectable where we set providedIn: 'root',
+then that service is provided application-wide and you can't and shouldn't add it to providers array of app.module and actually that is the
+approach recommended and it's not good to provide services in app.module , but instead we provide them by using providedIn: 'root' .
+Actually the effect of both approaches are the same but the latter(providedIn: 'root') keeps the app.module cleaner and leaner.
+Important: But still for interceptors you have no alternatives and therefore you have to add them to providers array.
+Now let's create core.module next to app.module file and then in that new file, we add providers array and then CUT the things that we had
+in providers array of app.module to that new file.
+Important: You don't need to export your services from core.module because services work differently than declarations and we know that
+ only declarations and other modules(also about imports array: you only export them if the module that you're importing this module into it, really
+ need that thing in imported array, if not, you don't export it. For example we sometimes export CommonModule from module1, because some modules need
+ it) need to be exported and services are automatically injected on root level and therefore you don't need to export them to make that
+ happen, so services are an exception and now without exporting those services from CoreModule and just by importing that CoreModule into
+ app.module (even though the CoreModule isn't exporting anything, but it still need to be included into app.module in order to include that
+ CoreModule into our build process), we have successfully created and used core.module .
+
+So core module is our place to see the root application services(if we don't use the providedIn: 'root' approach- but for interceptors you
+should create this CoreModule(but still it's optional)).
+
+11. Adding an auth feature module:
+-->
 
 <!-- 26. Angular Animations:
 We can use the animation system of angular in order to for example render adding items to a list or the conditional attaching or
@@ -2042,8 +2266,7 @@ must put those styles in styles.scss file not the scss file on the component whi
 
 
 -->
-<!--  TODO paste this text in pamphtlets in mac:
-4 different ways to share data between angular components
+<!-- 4 different ways to share data between angular components
 1) parent => child : via @Input()
 When you declare a prop via @Input() in the child component, that decorator allows that prop to BE RECEIVED FROM THE PARENT
 COMPONENT TEMPLATE file. After declaring that prop in child component, you can go to parent component's template and bind that
