@@ -1462,7 +1462,7 @@ import that shared module into both feature modules. So the initial modules are:
 
 and after creating and moving the shared things to that shared module and then importing the shared module into feature modules we would have:
 
-                      shared modules
+                      TODO shared modules
                ProductsModule            SalesModule
                               SharedModule
                 ProductsComponent         SalesComponent
@@ -1932,7 +1932,7 @@ EX) trigger('list1', [
 Also by using code above, when you refresh or enters this component, the elements that have this animation on them, would have that
 initial state for 'void' in other words, by entering the page, they would flies in.
 
-Now for deleting an element, let's add another transition(). For stying of ending state which is 'void', we need to do it in the last
+Now for deleting an element, let's add another transition(). For styling of ending state which is 'void', we need to do it in the last
 phase of transition() which we defined those phased in second arg of transition() which is an array.
 But for defining the styles of final state, we can define that final style in last animate() of transition() . But will we
 get that instantly changing the styles when transit from final phase of transition to final state problem?
@@ -2262,10 +2262,15 @@ So stick to that rule then your pipe will behave well.
 If you're using a library in your angular application and you want to style some parts of that library or package, PROBABLY you
 must put those styles in styles.scss file not the scss file on the component which is using that library.
 -------------------
-
-
-
--->
+When you want to implement back button in your angular app, you need to use RoutesRecognized and pairwise(); in a way that after
+subscribing to router.events , in the first arg of .subscribe(), you need to place an if() {} statement, which in that if() {} statement,
+you need to check if the evt is instance of RoutesRecognized and if so ...TODO
+But remember, if the user refreshes the page, the RoutesRecognized isn't available when the page loads, because of using pairwise()!
+Because pairwise() for emitting value, needs to have at least 2 emitted values of source observable.
+So RoutesRecognize will only available if at least user navigates in our app, therefore when the app loads, the user didn't navigate
+through our app and therefore we can't implement that back button BUT if you really need that, you can save the URLs that
+user navigated THROUGH OUR APP with localStorage and therefore when the app reloads, we still have the latest place that user
+where there, before reloading the page.-->
 <!-- 4 different ways to share data between angular components
 1) parent => child : via @Input()
 When you declare a prop via @Input() in the child component, that decorator allows that prop to BE RECEIVED FROM THE PARENT
@@ -2365,7 +2370,7 @@ That method will call the changeMessage() method of service which that changeMes
 we will pass the new data which that data will automatically broadcast to all of the components that subscribed to the currentMessage.
 For example let's do that in parent component.
 
-EX)
+EX) TODO: Write all of the example
 The data.service.ts file:
 private messageSource = new BehaviorSubject<string>("default value");
 currentMessage = this.messageSource.asObservable();
@@ -2403,5 +2408,11 @@ parent component.html:
 <button (click)="newMessage()">Send message</button>
 
 After clicking that button in parent component, ALL of the components that are subscribed to that currentMessage will get the
-latest message.-->
+latest message.
+--------------------
+The DoCheck gets called every time something async happens within the zone. Like an event firing.
+--------------------
+When refresh the page on the component that has @HostListener and go to other components it still applies TODO WHY?
+--------------------
+-->
 
