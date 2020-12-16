@@ -1,4 +1,4 @@
-import {Component, OnInit, Input, OnDestroy} from '@angular/core';
+import {Component, OnInit, Input, OnDestroy, HostListener} from '@angular/core';
 import {Recipe} from "./recipe.model";
 import {RecipeService} from "./recipe.service";
 

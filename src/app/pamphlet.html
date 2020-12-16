@@ -2414,5 +2414,61 @@ The DoCheck gets called every time something async happens within the zone. Like
 --------------------
 When refresh the page on the component that has @HostListener and go to other components it still applies TODO WHY?
 --------------------
--->
+It's good to check <object>.hasOwnProperty(<key>) in 'for in' loops. Also for get access to value of a prop in a 'for in' loop,
+instead of using <object>.<key> , you need to use <object>[<key>] .
+
+--------------------
+academind Angular Image Upload:
+<input type="file"> allows us to get file inputs. Also remember: If you're using this kind of <input> in an angular form, this CAN'T
+be registered as a form control where the attached file would automatically sync to your form object. No that won't work. You ALWAYS
+have to fetch this differently and you fetch it, by adding a (change) listener on that input with type of file. That event will trigger
+whenever the file selected by the user, changed which is the point where you're interested in the file. So let's write:
+<input type="file" (change)="onFileSelected($event)"> and then if you choose a file and log the $event and look at target prop of
+logged data, we have some interesting data. target is the input element in this case and because of <input type="file"> we have a special
+key which is files key and it's an array of all the files that we were selected in case you have a multi select tool, but in this case, we only
+have one element. In that files key and in it's first element we have the file that we just choose and that's the file we can upload.
+
+Now we need to write some logic to immediately upload the file whenever that (change) event occurs or maybe you want to wait until user
+presses some button. So maybe you have an upload <button> and it of course could be a submit button in a <form> and therefore when that
+<button> is inside a <form> and is type of submit, it needs to have (ngSubmit) . But in this case, we don't have an <form> element, therefore
+I used (click) listener for upload button.
+
+Now because we created more than 1 method and we need the data of a method which that data is received in that method, when that method triggers
+and in this case, that method(onSelectedFile()) calls, when the (change) event fires, we need the data of one method(that data receives in
+that method) in another method(onUpload()). therefore we need to STORE the data which onSelectedFile() method receives, in a property of
+that class, in order to be able to use it in another method which in this case, that another method is onUpload() method.
+
+Recap: Because the data we want in onUpload() is received in another method(onSelectedFile()), we need tp store that data in a PROPERTY,
+in order to get it in other methods or other places of that class or template file of that class.
+So now we can grab the file object by saying: event.target.files[0]
+
+Now how do we upload a file?
+We upload a file through angular HTTPClient. For that, we need to go to app.module and import HttpClientModule and then add it to imports
+array of that module. After doing that, we can inject the HttpClient into any service or component we want to use it.
+Now you could create a service or directly inject it where you want to use it.
+Now go to onUpload() method which gets called, when the upload button gets clicked and there, send a post request. Now the url we want send
+the request to is the url of firebase cloud function or ... which must accept incoming post requests with foreign data payload where we can
+extract the file from it.
+Also remember: event.target.files[0] would be of type File.
+
+Here we're casting to get some auto completion:
+this.selectedFile = <File>event.target.files[0];
+
+Important: The body of post request you want to send for upload, must be of type FormData(). So we need to instantiate a new FormData() and
+ then append some fields to it.
+
+When you're sending this request, the content-type should be set automatically.
+
+Then we can subscribe() to that this.http.post() .
+
+Now for testing, first you need to choose a file from <input type="file"> which triggers (change) event and that event would set the
+selectedFile prop and then by clicking on upload button, it will send the http request to upload that selected file.
+
+Now if you go to storage of firebase, you can see the uploaded file.
+
+Note: In the data you send to backend, instead of formData, of course you can send the binary itself. So instead of instance of formData and
+then append() data to it, you can just send the binary in body of request which sets in http.post() , IF the endpoint accepts that binary.
+So it doesn't requires formData but directly wants the binary.
+
+Now let's say we want to track the progress of upload. For that, you can pass an object as THIRD argument of post() method. TODO till 8:00-->
 
