@@ -1,6 +1,6 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
-import {FormsModule, ReactiveFormsModule} from '@angular/forms';
+// import {FormsModule} from '@angular/forms';
 import {HttpClientModule} from '@angular/common/http';
 
 import { AppComponent } from './app.component';
@@ -17,15 +17,17 @@ import {AppRoutingModule} from './app-routing.module';
 // import { RecipeStartComponent } from './recipes/recipe-start/recipe-start.component';
 // import { RecipeEditComponent } from './recipes/recipe-edit/recipe-edit.component';
 // import {RecipeService} from './recipes/recipe.service';
-import {AuthComponent} from './auth/auth.component';
+// import {AuthComponent} from './auth/auth.component';
 // import {LoadingSpinnerComponent} from './shared/loading-spinner/loading-spinner.component';
 // import {AuthInterceptorService} from './auth/auth-interceptor.service';
 // import {AlertComponent} from './shared/alert/alert.component';
 // import {PlaceholderDirective} from './shared/placeholder/placeholder.directive';
-import {RecipesModule} from './recipes/recipes.module';
+// import {RecipesModule} from './recipes/recipes.module';
 import {ShoppingListModule} from './shopping-list/shopping-list.module';
 import {SharedModule} from './shared/shared.module';
-import {CoreModule} from "./core.module";
+import {CoreModule} from './core.module';
+// import {AuthModule} from './auth/auth.module';
+// import {AuthModule} from './auth/auth.module';
 
 @NgModule({
   declarations: [
@@ -40,19 +42,19 @@ import {CoreModule} from "./core.module";
     // DropdownDirective,
     // RecipeStartComponent,
     // RecipeEditComponent,
-    AuthComponent,
+    // AuthComponent,
     // LoadingSpinnerComponent,
     // AlertComponent,
     // PlaceholderDirective
   ],
   imports: [
     BrowserModule,
-    FormsModule,
-    ReactiveFormsModule,
+    // ReactiveFormsModule,
     HttpClientModule,
     AppRoutingModule,
-    RecipesModule,
-    ShoppingListModule,
+    // RecipesModule,
+    // ShoppingListModule,
+    // AuthModule,
     SharedModule,
     CoreModule
   ],

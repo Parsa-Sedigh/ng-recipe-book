@@ -1,12 +1,11 @@
-import {Component, ComponentFactoryResolver, OnDestroy, ViewChild} from "@angular/core";
-import {NgForm} from "@angular/forms";
-import {Router} from "@angular/router";
-import {Observable, Subscription} from "rxjs";
+import {Component, ComponentFactoryResolver, OnDestroy, ViewChild} from '@angular/core';
+import {NgForm} from '@angular/forms';
+import {Router} from '@angular/router';
+import {Observable, Subscription} from 'rxjs';
 
-import {AuthResponseData, AuthService} from "./auth.service";
+import {AuthResponseData, AuthService} from './auth.service';
 import {AlertComponent} from '../shared/alert/alert.component';
-import {PlaceholderDirective} from "../shared/placeholder/placeholder.directive";
-import {host} from "@angular-devkit/build-angular/src/test-utils";
+import {PlaceholderDirective} from '../shared/placeholder/placeholder.directive';
 
 @Component({
   selector: 'app-auth',
@@ -18,7 +17,7 @@ export class AuthComponent implements OnDestroy {
   error: string = null;
   @ViewChild(PlaceholderDirective, {static: false})
   alertHost: PlaceholderDirective;
-  private closeSub: Subscription
+  private closeSub: Subscription;
 
   constructor(private authService: AuthService,
               private router: Router,
@@ -190,8 +189,8 @@ export class AuthComponent implements OnDestroy {
       that rule. So here we can subscribe() to EventEmitter and it is OK. So because we are MANUALLY subscribing to sth, we need
       to store that subscription and we need to clear that subscription too.
      Remember: EventEmitter<>() is based on the subject and therefore it has the same type of subscription like Subjects<>(). */
-    componentRef.instance.message = message;
-    this.closeSub = componentRef.instance.close.subscribe(
+     componentRef.instance.message = message;
+     this.closeSub = componentRef.instance.close.subscribe(
       res => {
         /* Clear the reference of dynamic component:
         Also here, we cleared the subscription because I know that this component will be removed(because we clicked on the close

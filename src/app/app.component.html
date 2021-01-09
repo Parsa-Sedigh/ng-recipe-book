@@ -25,18 +25,18 @@ exist before. Now the last command will create recipe-list component inside reci
 We nest the recipe-item folder inside recipe-list because a recipe item is just one item in the list of recipes which is recipe-list .
   -->
 <!-- We need to pass data between components.
- We can use property in event biding not only on html elements and their native attrs and events, but we can use it on directives
- and we also did this with ngClass and ngStyle. So we can use it on our own components and bind it to our own custom properties
- and custom events.
- So property and event binding can be done on 3 things:
- 1) HTML elements 2)Directives 3) Components
- For HTML elements we bind to their natural attr and events but for those other two, we bind to their custom properties and
- events.
+We can use property in event biding not only on html elements and their native attrs and events, but we can use it on directives
+and we also did this with ngClass and ngStyle. So we can use it on our own components and bind it to our own custom properties
+and custom events.
+So property and event binding can be done on 3 things:
+1) HTML elements 2)Directives 3) Components
+For HTML elements we bind to their natural attr and events but for those other two, we bind to their custom properties and
+events.
 
- So we can use property binding to bind to component properties.
+So we can use property binding to bind to component properties.
 
- property: {} With this syntax we make sure that this property just get the type that is defined inside {} .
- SO {...} is not the value of property.
+property: {} With this syntax we make sure that this property just get the type that is defined inside {} .
+SO {...} is not the value of property.
 
  Binding to a property of a component outside of folder of component (binding to a custom property):
 

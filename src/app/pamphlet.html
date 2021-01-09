@@ -1561,7 +1561,380 @@ So core module is our place to see the root application services(if we don't use
 should create this CoreModule(but still it's optional)).
 
 11. Adding an auth feature module:
--->
+In the app.module , we still need FormsModule because auth.component needs it, but we can definitely remove ReactiveFormsModule.
+Also we need the HttpClientModule because turns out that this is a module that only sets uo some global services, the injectable http service
+and we need that.
+Important: But we can drop the FormsModule and get rid of auth.component, because we can simply create a new feature module for auth.
+ So now, we need to outsource the auth component and it's route into a separate feature module.
+
+Important: When you outsource sth and create a separate module for it, if it has a related service and if that service was provided importing it in
+ providers array and not by recommended approach, then you would keep that in providers array of app.module in order to have it application-wide.-->
+<!-- 12. Understanding lazy loading:
+Let's dive into first optimization concept. Because thus far, that entire code splitting by separating our modules into separate modules,
+was only cosmetical, it makes our code in the individual modules leaner and it can help us with maintaining that code but it doesn't
+influence the performance of our app, at all. But that would change by using lazy loading, so using multiple feature modules, is a
+PREREQUISITE for lazy loading. So outsourcing code into separate modules itself doesn't affect performance but it's a prerequisite for
+performance.
+Now what is lazy loading?
+Consider this app. We have 3 routes: root route, /products and /admin and we have a user visiting the pages.
+Now every route is associated with a separate module which are our app.module and our different feature modules where each module of course
+might have multiple components, directives, pipes and ... which BELONGS to that module.
+Now when our user visits root route, we load that module and we do the same when user visit the other pages. OR DO WE DO THAT? NO!!!!!
+Important: Actually currently, which we're not using lazy loading, whenever user visits any page, we load EVERYTHING. But wouldn't it make
+ more sense to only load ProductsModule when user visit that page?
+ So by using lazy loading, we only load the code that belongs to those areas of our app when we really need it?
+ With lazy loading, we initially ONLY load our root route content, so only the app.module and the code of all components that are registered
+ in that module and we don't load the other modules and only when we visit another module, like the admin module(so the admin route),
+ we load the admin module code and the code of all the components and ... that belongs to that ONLY module and the advantage of lazy loading is
+ initially, user downloads a SMALLER code bundle and we download more code when we NEED it, but initially our app is able to start faster,
+ because the user's browser has to download and parse less code on the first visit of a certain route.
+
+                                user
+
+   /                          /products               /admin
+AppModule/CoreModule          ProductsModule          AdminModule
+      components              components              components
+      ...                     ...                     ...
+
+13. Implementing lazy loading:
+Currently we have an app without lazy loading. Now if you go to network tab and reload the app for example on the auth page and being
+unauthenticated, you see that we download a bunch of files. have 4 extremely big files which are polyfills.js, styles.js, vendor.js and main.js and
+we're in development mode which is why they're extremely big and they contain many debug features, with lazy loading we can decrease those huge
+sizes. How we add lazy loading to the modules?
+Let's start with the recipes.module . Because currently we start the work from where we're not authenticated, so we certainly don't need to
+load the recipes module code, because we can't even access anything from the recipes.module . Also it might also not make sense to load the
+shopping list module even though WE CAN ACCESS IT WHEN WE'RE NOT AUTHENTICATED, because UNLESS we access the shopping-list page, there's no
+need to download that code.
+Important: But why we started the work from auth page and in unauthenticated state?
+ Well, because that's the place and the state that we arrive at the application. So users arrive at our application, in /auth page(we have
+ redirectTo in routing app-routing module that direct the users to /auth even if they go to / page) and in unauthenticated state, so they can't
+ even access some modules of our app and they also can access some other modules, but by navigating towards that module.
+So you saw 2 things we need to fix and lazy load them now:
+1) The modules we can't even access them from the start
+2) The modules we can access from start but we don't need to load and download them when we arrive at application or when we even arrive at
+specific part of app, we don't need to download other accessible parts of app. So let's start from /recipes area.
+Important: In recipes.module we have it's own routes there in recipes-routing.module . Having the routes of a module in it's <feature-routing>.module
+ or even not separated and in <feature>.module is a crucial starting point.
+ For lazy loading to work, your feature module needs to bring it's OWN routes config as we're doing that in recipes.module and it needs to bring
+ it's own routes by using .forChild() .
+Now one thing we need to change in routes of recipes module is the path which we change it from 'recipes' to ''. Why?
+Because now we need to add sth to our app-routing.module for lazy loading and in app-routing.module we add another route and that would be the
+route for recipes, so the path we just removed or changed it from 'recipes' to '' from the recipes.module .
+So we added that path again in app-routing.module, but now I don't add a component which I want to load but instead, we use loadChildren prop.
+That's a special prop in a route config array which angular understands as: "pleas, only load the code content or the module that I will point
+you at it, WHEN user visits this path there".
+Now for the value of loadChildren, you use a string and not the type of a component and that string is the path(relatively to app.module) to
+the MODULE you want to load when that path('recipes') is visited. So when the 'recipes' path is visited we want to load recipes.module .
+ALSO we need to add the name of that module you want to load lazily(because angular can't know that and it needs to know the class name, because
+technically it will go to that path and then tries to dynamically import a specific object from that file and theoretically that could be
+named anything(but WE(we are good developers!) are of course following the naming conventions, but no one is forcing us to follow that naming
+pattern and therefore we EXPLICITLY have to tell angular what is the name of the exported class in that file is? and you do that, by adding a
+# (you shouldn't use the extension of the module file in that string)and then the name of the exported class.).
+So we might have sth like(in OLDER versions, you should use this syntax): loadChildren: './recipes/recipes.module#RecipesModule'
+
+The effect of that will be that now, the code is split at that point(where the specified module leaves) and everything at that path(so that
+entire specified module) and everything that module uses(so all the declarations of that module), will be put into a SEPARATE code bundle which
+is then downloaded and parsed ON DEMAND, as soon as the user visits that path, but not sooner and that's simply acheived by angular CLI essentially
+analyzing this when we build our app and it will then analyzing the recipes module which we pointed to that module in loadChildren prop and it will
+look at what we declare in there and ... and it will put all the things we declared there into that separate bundle which is not build
+separately and would detached from our main bundle which with that main bundle our app starts.
+
+A crucial thing for that, to have a real effect and save code, is that you have the TS import statements which are only for recipes.module in that
+recipes.module and don't have those import statements also in app.module . So you must only have those import statements in recipes.module and not
+in app.module , why?
+Because ultimately for the build process, it's crucial what you import at the top of the file. Because the files that those imports point toward them,
+all of them will bundle together into one code bundle. So in the recipes.module in the end, the build process will look at those import statements,
+which are required for the declarations array items to work and whatever is included there will be included in the same bundle.
+So if you have another even unused import statement, lying around your app.module , then that file(s) which that import, imports them, will be
+included into the app.module code bundle, even though you're not using the things which that import statement, imports.
+
+So to have the biggest effect and save the most code, make sure your imports at the top, are correct and they're just using in that module and
+you haven't any duplicate import. If they're correct, you'll get the biggest possible effect from code splitting.
+
+Now in the recipes-routing.module , it's crucial that you have an empty path, because we now changed the route config(in app.module) in order to
+include the path of that lazy load module into app-routing module and with that, it will load that lazy module(in this case recipes module),
+whenever the user visit 'recipes' or in better words '/recipes' which is specified in app-routing.module and therefore in recipes.module we ALREADY
+are at /recipes and hence at recipes-routing.module , which will only kick in when we do visit that module, we should specify '' for the path of
+that module because if we're visiting that module, it means we're already at /recipes which we specified it in app-routing.module .
+
+After adding a new path and the module responsive for that lazy load path, we need to restart the ng server or whatever command we're using.
+
+In newer version of angular you have an alternative syntax for the value of loadChildren which is the path of the module you want to lazy load
+it and maybe the older syntax might fail in newer versions. So if you're getting an error like: module cannot be found when trying the
+lazy loaded modules out, OR if you want to switch to more modern and different syntax you can do the following:
+Instead of having sth like: loadChildren: './recipes/recipes.module#RecipesModule' to identify the module which should be loaded,
+you can add an anonymous arrow function there and in the body of that function, you call import() . So you call an import statement, but
+dynamically as a function. Then in () of import() you pass the path to the module and you don't add a # tag thereafter to identify that module,
+but instead, import() resolves a promise. So now you need to call .then() and in that .then() , you pass in a function which RECEIVES
+the module which was loaded in import() and on that received module object, you can extract your modules and in that case the RecipesModule .
+
+So that was an alternative syntax that you can use for loading the modules which are responsible for those paths.
+Now if you restart the command you're running, you get an error. Why?
+Because in the app.module , we're still importing the recipes.module , but now we're trying to load the recipes.module lazily in the
+app-routing.module . So we should only have the lazy load import and other imports should be deleted in app.module . Otherwise we're
+importing it both eagerly and lazily at the same time and that causes error.
+
+Also remove the import statements, otherwise it will technically work but you won't save anything in code size.
+
+Now if you look at the network tab, vendor.js is still big because that's just angular, but main.js , actually got smaller.
+
+Of course it makes most sense to lazy load pars of the app, if there's at least a slight CHANCE that the use never visits or using that
+part of the app. For example in this app, you could argue that lazy loading the auth page doesn't make too much sense because the user
+will always visit that page(actually the auth.module), though I guess that's also only correct, if we assume that the user is already
+logged in, so the user will never see the auth page and therefore even lazy loading the auth page might make sense.
+But if you have some page which will ALWAYS be visited or with a very very high chance of visiting that page, then lazy loading that page or
+in better words, that module, might not worth it, because you have to consider that lazy loading comes with the downside of that extra code
+bundle being downloaded LATER and therefore once the user needs that bundle of lazy loaded module, there might be a slight delay in
+your app since that code needs to be downloaded and parsed, so you're just postponing that.  -->
+<!-- 14. More lazy loading:
+Before we dive into optimizing lazy loading, let's add more lazy loading.
+For lazy load shopping-list module, fist we add a new route for it in app-routing module and in that route, we point towards the
+file of that module WITHOUT it's extension and then # and then the name of the class of that module file we're pointing towards(the old
+approach).
+Remember: The path we used for path prop of that module is the same path we had in shopping-list.module and in it's .forChild() (or in the case
+that you created a separate module for shopping-list module for it's routing, then still we could used that path exactly and without any changes in
+the lazy load approach of shopping-list module).
+So that array we pass to forChild() (or the array of routes we pass to in-module routing of our modules), is KINDA relative routes that we have
+inside that module.
+
+Remember: In import() inside app-routing , m stands for module.
+
+Now we need to REMOVE that route I mentioned in Remember notice from shopping-list.module and in the object we pass to RouterModule.forChild() .
+Because that path name not went to the GLOBAL route configs(app-routing.module) where we set up the lazy loading of our modules.
+
+After changes in lazy loading routes and ... , don't forget to restart the command you're using. With that, the changes are picked up and
+if you don't do that, sometimes those changes may get lost.
+Important: Now go to app.module and make sure you remove the modules that you're not EAGERLY(not using lazy loading) loading them from imports
+ array and also remove the TS import statements.
+Now in the network tab, you see we have auth-auth.module and main.js(main module) and got smaller, even the vendor.js(vendor module)
+got smaller. Because some parts we previously imported, are now only imported by modules. So some parts of the angular framework like the
+FormsModule are now ONLY imported when the component that uses that FormsModule, is imported. Therefore now if you login and go to /recipes,
+in that point, the recipes.module is coming in(is imported and downloaded by our browser) and if you go to /shopping-list, now the
+shoppingListModule is imported and downloaded and you see those imports of modules is popping in the network tabs and that's lazy loading in
+action.
+
+Remember: Remove the unused import statements from your modules to optimize lazy loading.
+
+15. Preloading lazy loaded code:
+A way for optimizing lazy loading(which itself is already an optimization) is how the lazy loaded code is loaded! Right now, we load code,
+whenever we NEED it. So for example as soon as we visit /recipes , we bring in the RecipesModule. The downside of that is, that's downloaded and
+parsed just when we need it, leading to a tiny delay. The bigger the module and slower the internet, the longer that delay will be.
+Therefore we can tell angular to preload lazy loaded modules to avoid that delay.
+For that we go to our root router module(app-routing.module) and in .forRoot() , we pass a second arg which is an object where you can configure that root router.
+Then pass preloadingStrategy prop. The default value for that prop is NoPreloading, but now we set it to PreloadAllModules which is a constant.
+Important: With that, we know generally we're using lazy loading. Right? So it won't put all that code into one bundle, it will split it. But with this new
+ strategy, it will preload the bundles as soon as possible. So when we're on the {path: 'auth' loadChildren: '...'} page, it will already preload
+ {path: 'recipes' loadChildren: '...'} and {path: 'shopping-list', loadChildren: '...'}, so that these code bundles are already available when we NEED them.
+The advantage is that the initial download bundles, still is kept small because there, that code isn't included and therefore the initial loading phase still is
+fast. But then when the user is browsing that page and therefore we have some idle time anyways, we preload those additional code bundles to make sure that
+subsequent navigation requests are faster. So we're getting the best of both worlds. A fast initial load and thereafter, fast subsequent loads.
+
+Now if you for example are on /auth, you still see main.js bundle and auth.js bundle and ... are in network tab, but you also see the recipes and
+shopping-list module is loaded! and now if you go to for example /recipes , you DON'T see download of RecipesModule when you go there or even if you
+go to /shopping-list , you don't see request for downloading that module. Because they already were preloaded.
+Remember: Still we had that smaller INITIAL bundle but we benefit from the future bundles downloaded when we're in /auth for example.
+
+You can even build your own preloading strategy where you define your own logic for example controlling only certain routes should be preloaded.
+
+16. Modules & Services:
+Now we can finally understand what's special about services and modules. Let's understand where you can provide services and how that affects the instances of the
+services you're working with.
+
+1) We CAN provide services in app.module .
+2) Also we can provide services in app.component or other comps by adding a providers key to @Component() .
+3) We can load services or add services to providers array of any EAGER(not lazy loaded) loaded module.
+4) We can add services to providers array of lazy loaded modules.
+5) We can also provide services by adding providedIn: 'root' config in @Injectable() and that would be recommended for all services that you planned
+on providing in app.module(so this way is better than first way)
+
+Now when you provide a service in app.module or with providedIn: 'root', the service is available application-wide and with the service, I also mean the
+same instance of that service is available app-wide. You're always working with the same single instance.
+
+If you provide a service in a comp, no matter if that's the app.component or another comp, then that service is ONLY available for DI inside of that component tree
+and then all these comps will again share the same instance but we're talking ONLY about that comp tree and if you provide the service in multiple sibling comps of
+your app, then all those sibling comp tress have access to the service but each comp tree has access to it's OWN service instance.
+
+If you add a service to providers of an eager loaded module, you might think that service is only available INSIDE of that module and that every
+module where you add a service to it's providers, has it's OWN instance of that service, but actually that's NOT the case.
+If a module is eager loaded, everything is bundled together initially and therefore any services you add to providers in an eager
+loaded module(for example RecipesModule isn't lazy loaded and therefore it needs to still eagerly loaded by importing it into the app.module),
+will be available application-wide with one and the SAME instance.
+Important: So adding a service to providers of an eagerly loaded module, has the exact same effect as adding a service to providers of app.module or as adding
+ providedIn: 'root' in @Injectable to that service and by doing this, it will provide the same instance of service to the entire app.
+
+Important: But a huge difference can be seen if you add a service to providers of a lazy loaded module. There, the service is ONLY available in that
+ loaded module and it gets it's own instance.
+If you do provide a service both in the app.module and also in the lazy loaded module, then the service is of course available application-wide, but the
+lazy loaded module will get a separate instance and not the same instance you use in the rest of the app(because as I said adding service to providers of app.module,
+makes that service available in application-wide, but here because we also provided it in a lazy loaded module, inside that lazy module, we get a separate
+instance of that service). Sometimes this can be desirable but in other cases, it might lead to a strange behaviour where you would have expected to work with
+one and the same instance when you didn't. The reason for that is when you do provide in app.module or in @Injectable() , you use the root injector, so the root
+DI mechanism of angular. When you do provide it in a comp, you use the comp specific injector, which isn't the root injector and therefore not the entire
+app has access to that. In an eagerly loaded module, the root injector is used automatically, but with a lazy loaded module, a separate child injector is created by
+angular for that module and therefore, that module has it's OWN instance of that service.
+
+Therefore, the default should be that you use the app.module or, providedIn: 'root' in @Injectable.
+You of course might have scenarios where a comp tree needs it's own service, for example if that comp tree somehow has a service that only matters for those comps and
+it doesn't matter app-wide, then there's no need to provide that service app-wide, instead you can provide it in that comp.
+
+Eagerly loaded modules should never provide services and you should avoid it. Because the effect is the same as in the app.module but it's kind of unexpected
+and it's harder to detect services there and therefore you might look for a service and go to app.module(because that service is app-wide but we didn't provided it
+in app.module but in an eagerly loaded module, which is unexpected) but don't find it there and therefore confused. Because you might get confuse whether
+that service is not intended to be available app-wide or only to that module.
+
+In a lazy loaded module, you can add a service to providers but only do this if you deliberately want to have a separate instance of that service in that module.
+Otherwise you can have strange bugs.
+
+Important: So as a rule, generally you want to ensure that services are always available app-wide by using providedIn: 'root' or by adding them to providers
+ in app.module , unless you have a strong reason for adding them only in a comp tree or in a lazy loaded module. BUT ANYWAYS, NEVER add services
+ in an eager loaded module.
+
+Services and modules:
+      AppModule                                                 AppComponent(or other comps)
+service available app-wide                                  service available in comp tree
+Use root injector                                           use component specific injector
+Should be default(it's better to use providedIn: 'root')    use if service is only relevant for that component-tree
+
+  eager loaded module                                         lazy loaded module
+service available app-wide                                  use child injector
+use root injector                                           use if service should be scoped to loaded module
+avoid this!-->
+<!-- 17. Loading services differently:
+When you provide a service app-wide, all of the instances of that service are the SAME! and it's looks(actually is!) like you're working with
+one instance of that service in whole app. So the data of the app-wide service is equal to all of the places it's being used, because we're using the
+same object of that service in all places.
+
+Important: An eagerly loaded module is imported in app.module . But lazy loaded modules wouldn't be added to app.module .
+ CoreModule and AppModule are eagerly loaded modules.
+
+When you provide the same service both in app.module and a lazy loaded module, you might get some unexpected results and that's because the
+instance of service we're using in that lazy loaded module is different than instance(object) of that service in rest of the app. So the data of
+instance of service in that lazy loaded module is different than the data of instance of that service in rest of the app. Because the instances
+of that services in those places are different. So we have two different objects(instances) of same service. So that lazy loaded module doesn't use
+the app-wide instance of that service, instead that lazy module and all of it's comps, use they're own instance of that service which that
+instance is created by child injector.
+Now if you need that behavior, use it.
+But in general, you should think twice before you provide a service in ANY other module than the app.module . Because often it's not the
+wanted behavior and you have bugs when using different instances in your app.
+Important: So be aware that there are differences in instances you get when you provide services in lazy loaded modules. This rule also is true in
+ modules that you import them into lazy loaded modules.
+For example, we know SharedModule has a very good possibility of being imported into lazy loaded modules and it also is imported in app.module .
+So if you add a service to providers of SharedModule, we know SharedModule is imported into app.module(or in other words, is imported by app.module) and
+therefore it's an eagerly loaded module. But it's ALSO imported into shopping-list module . So in there, the SharedModule TO ShoppingListModule is also an
+eagerly loaded module but ShoppingListModule itself is lazy loaded which TURNS that SharedModule in that place where it's imported, into a lazy loaded module.
+So SharedModule in that place where it's imported turned into a lazy loaded module.
+
+So in our project(possibly in your project too, because it's common to import SharedModule into lazy loaded modules), the SharedModule is both. Meaning it's
+lazy loaded in shopping-list.module or through shopping-list.module and it's eagerly loaded into app.module and the effect of that is, we have the issue that the
+shopping-list module still uses it's own instance of service provided in SharedModule. Because ShoppingListModule is importing the SharedModule into it and then
+it's using the service which was provided in SharedModule, into itself and that leads to use it's own instance of that service in itself(ShoppingListModule), which
+leads to bug.
+
+So when you provide services in other modules you get that bug.
+You might provide a service in sth like SharedModule, where you think: "yes I'm gonna put all my shared services into shared module". But you might still have
+shared services that should use the same instance across entire your app(if they don't need to, well don't worry! But it's rare). Well AS SOON AS you
+import that shared module which has some services that they need to use the same instance, into a lazy loaded module, the services provided in the shared module
+will be recreated for that lazy loaded module and all of a sudden, you might have a behavior that you don't want.
+
+So whilst providing a service directly in a lazy loaded module MIGHT be sth you control deliberately(because we don't import lazy loaded modules into other modules),
+but providing that service in a SharedModule(which can be imported into a lazy loaded module) is a common gotcha where, you think you're using the same service instance
+in the entire app, but you actually don't!
+
+So if you don't use providedIn: 'root', you should have a strong reason and you should either be able to rule out that this module you're adding the service in it,
+is loaded lazily or you deliberately WANT multiple instances of that service.
+
+18. A head of time compilation:
+AOT vs JIT(just in time) compilation:
+One other optimization technique before ship our app to production. So before deploying our ng app onto a server.
+Our templates include some special angular syntax. The templates are not one to one snapshot that's gonna get rendered into real DOM. Instead
+ng will parse our templates and then update the real DOM based on the instructions we places in our templates. So all comps and directives are
+translated to commands that will be used to alter the real DOM.
+So whilst we use the TS compiler, we also have another compiler in that build process working behind the scenes as part of ng serve which is
+angular compiler. The angular compiler is part of the angular app you're seeing in browser with ng serve.
+Angular compiler takes the compiled JS code and your templates and translates all the logic there, into concrete instructions that
+update the real dom.
+This by default, happens all in your browser. Because the ng compiler is part of the ng code you're shipping. This process is called JIT
+compilation because ng templates are compiled just in time, when the rendering occurs in your browser. So the angular compiler runs in browser
+at runtime. The downside of this, is that 1) this compilation process takes time and also 2) the ng compiler itself(the entire code that is just
+responsible for compiling your templates,) is big! It's part of your angular app, even though it has no purpose and it has nothing to do with your
+business logic, other than bringing it onto the screen which arguably is crucial but still a bit annoying that it HAS to be part of your app.
+
+    Your code and templates(includes syntax that only angular understands e.g: *ngIf)
+              |
+              | (downward)
+    TS compiler compiles your code to JS
+              |
+              |
+    Angular compiler(automatically included in built code)
+    compiles template syntax to JS DOM instructions
+   |                                                        |
+JUT compilation                                           AOT compilation
+Angular template compiler runs in browser(at runtime)   ng template compiler runs during build process(before app is deployed)
+
+The good thing is, it doesn't have to be part of your app, since ng compiler is responsible for converting your template code and your template instructions
+into JS commands that the browser understands, we can do that during development, as part of build process and that process is called AOT compilation.
+Because we compile the ng templates a head of the execution time.
+Then the ng template compiler runs during the build process, BEFORE the app is deployed and not in browser.
+
+The ng serve process as of now by default uses JIT compiler because that's better for debugging and fast updating of the running app and there's nothing wrong with
+that. During development, we have no problem with shipping a too big app where the compiler is part of the code, because we're not optimizing the code size during
+dev, we just want to have a good development experience with rich error messages. For optimizing run:
+ng build --prod
+This command uses AOT compilation. Also maybe during the AOT compilation, you face some errors that didn't occur earlier because JIT compiler is a bit
+forgiving than the AOT compiler. The AOT compiler does some extra checks.
+
+EX) The tudor gets this error: Property 'controls' doesn't exist on type 'AbstractControl' and the line that threw error was:
+*ngFor="let ingredientCtrl of recipeForm.get('ingredients').controls"
+
+So that part works with JIT compiler but the AOT compiler basically doesn't understand that the recipeForm.get('ingredients'), gives us
+a FormArray that has a controls prop on it. But it doesn't know what we get back there, it knows we get back an AbstractControl. But we
+know FormArray is an AbstractControl but basically an extended version with that extra controls prop but other controls don't have a
+controls prop.
+The solution is to remove that code from template file and move it into the TS code. There we can add a new getter property.
+Learn: A getter property is like a function which you can use like a property in a template or other places and you can't set a value to it
+ and you can only read it. The signature of it looks like the function signature with the parentheses and the {}.
+
+After the build is finished, you can run ng serve but it will build the app again.
+The dist folder, contains the project name folder.
+
+You can see the size of downloaded files in network tab of devtools.
+
+The ng build --prod , removes the angular compiler from the final bundle. So AOT compilation is a crucial optimization, because it removes the
+ng compiler.
+
+19. Wrap Up:
+We used lazy loading to optimize our initial bundle size.
+We have some special notices about services and their special relations with modules.
+You can use preLoadingStrategy to optimize lazy loading even more.
+AOT compilation is another crucial optimization that you should use before shipping your app to a server.-->
+
+<!-- SECTION 23. Deploying an Angular App
+1. Module Introduction:
+Now let's ship our app onto a server that it has it's own domain and people can visit it from anywhere in the web.
+
+2. Deployment Preparation & Steps:
+Steps:
+1- Use and check environment variables
+2- Polish and test your code(code optimization like lazy loading).
+3- Build your app for production and that means you run a command that takes all your TS code, compiles it to JS, then bundles all of your together, translates it
+into angular language, so that the angular renderer can work with it in the browser and bundle everything up and optimize it to be as small as possible. Because the
+app you're shipping has to be downloaded by every user using your app and you do all that with: ng build --prod
+That command also implement AOT compilation and that's just one of the many optimizations that the ng CLI does for you behind the scenes.
+
+4- (deployment) Once you built your app, you can DEPLOY those build artifacts or those generated files, to a static host. A static host is a web server that is capable of
+serving html, css and JS BUT that's not capable of running any server side language, like PHP or node. WHY?
+Because you ONLY NEED html, css and JS. Because an ng app is made up of JUST those 3 things. Of course you CAN have some back-end code, but firebase isn't
+our own backend, but you can have your own back-end, but if you're JUST working with angular or in other words, if you're just building a SPA and you're not working
+on the backend on your own(firebase isn't our own!), then you in the end, have just html, css and JS and all you need for that is a web server that is capable of serving
+those files.
+
+3. Using Environment Variables:
+Let's assume that our code is already optimized and we tested it, therefore the only thing that's missing is that we deploy this app.
+Before doing that, in environments folder, we can add key-value pairs to that constant(const environment) in those files.
+For example, if you were using an api that requires some API keys, then you can store that API key there and you can import that env const into your files in order to
+use that API key and what the ng CLI does for you is that it will automatically swap those two files (environment.ts and environment.prod.ts) when you're building for
+production. So during development, that environment.ts file and the value you have in that key-value constant will be used and during production, that const in that
+prod file will be used instead.-->
 
 <!-- 26. Angular Animations:
 We can use the animation system of angular in order to for example render adding items to a list or the conditional attaching or
