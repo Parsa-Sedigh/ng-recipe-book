@@ -1933,8 +1933,53 @@ Let's assume that our code is already optimized and we tested it, therefore the 
 Before doing that, in environments folder, we can add key-value pairs to that constant(const environment) in those files.
 For example, if you were using an api that requires some API keys, then you can store that API key there and you can import that env const into your files in order to
 use that API key and what the ng CLI does for you is that it will automatically swap those two files (environment.ts and environment.prod.ts) when you're building for
-production. So during development, that environment.ts file and the value you have in that key-value constant will be used and during production, that const in that
-prod file will be used instead.-->
+production. So during development, that environment.ts file and the value you have in that environment obj will be used and during production, that const in that
+prod file will be used instead and that would be swapped AUTOMATICALLY. So you don't need to write any special code for that behavior to occur.
+
+Now why is that useful?
+You might have certain values that differ from development to production. You might have some API keys that are meant to be used during development and then
+you have different keys(which maybe are more restrictive) for production. Or any other value, you can store anything in there, so any value which you need in
+your other files and you have the option of using different values for production and development.
+
+Currently, we are using such an api key. In auth.service . In there, we're sending reqs to the firebase backend APIs and there, we're using firebase API key.
+That key is the same for signing users up and signing users in and therefore, we could of course manage that key in a constant inside of that file(auth.service) ,
+but especially if we were using that key in other files as well, it's definitely worth moving that into environment file. So we added firebaseAPIKey in
+environment.ts .
+Now after you stored that key-value in environment.ts file, we should ALSO copy that into environment.prod.ts file, because that's the file that will be
+used when you build for production.
+Now go to the files where you want to use the key-value pairs stored in those env files and in those files, you need to import the exported things from the env files and
+we know that in those files, we exported const environment, so we can import it in the files that we need it.
+Important: When you're specifying the name of the file for importing that exported environment variable or any other exported thing from those files, you should specify the
+ environment file and not the environment.prod file. Because it will be swapped AUTOMATICALLY for you by ng CLI when you build for production. Then you can use that
+ imported stuff.
+
+The advantage of that is you can swap values from development to production. It can help you with development.
+
+4. Deployment Example Firebase Hosting:
+With the env variables added, we can build the project by running: ng build --prod .
+What that cmd does, is
+1- it compiles your TS code to JS
+2- it also compiles all your templates to JS instructions, so in the end, only JS code is generated, so the JS code that runs in the browser and contains all the
+logic for updating the DOM in the way you defined in your multiple components and all the logic you added in your app. That is all done by the bundled up app which
+takes the advantage of the ng framework that of course powers all of that.
+
+In dist folder, you have a folder of your project name and in that folder, in browser folder(if using SSR), you have bunch of assets that you might have
+included and you also got your main.js, polyfills.js, runtime.js and a couple of other JS files like 6.18ed... .js which essentially contain your angular app. So
+they contain all the logic of the angular framework and of your code and you will find some elements which you have stored in your template files.
+So you can definitely also search those files for some snippets of your templates.
+
+So everything in the dist/<project-name> is the code which you need to deploy. For example in there, we have index.html file with a bunch of
+<script> tags and those <script> tags make up all your app that starts and also there, we have the <link rel="stylesheet"> for the styles which for example can
+contain the bootstrap styles.
+
+Now let's deploy the app.
+AWS S3 which uses a special service of the AWS, allows you to host static websites.
+Also we can use firebase hosting. Now you don't need to have the rest of your back-end on firebase to use that hosting. It was a coincidence that
+in this project we used firebase for authentication and for database. But even if you use your own backend of if you use a totally different API, you can
+use firebase hosting to host STATIC websites.
+
+First we need firebase CLI which is a tool to automatically deploy your firebase app. So run: npm i firebase-tools -g to install firebase-tools which is the
+firebase-CLI in the end. TODO till 3:50-->
 
 <!-- 26. Angular Animations:
 We can use the animation system of angular in order to for example render adding items to a list or the conditional attaching or

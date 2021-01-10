@@ -5,6 +5,7 @@ import {catchError, tap} from "rxjs/operators";
 import {BehaviorSubject, Observable, Subject, throwError} from 'rxjs';
 import {User} from "./user.model";
 import Timeout = NodeJS.Timeout;
+import {environment} from '../../environments/environment';
 
 /* I added ? for registered prop because the response data from firebase always doesn't have that property(for example when sending
 a post request for sign up a user, the response doesn't have that prop but when signing in a user the response does have that prop.
@@ -72,7 +73,7 @@ export class AuthService {
       will yield a response which the body of that response is in that format which we specified inside <> and that can helpful
       when we work with that response.
      Now we need to fire this method and subscribe to it in the auth component.  */
-    return this.http.post<AuthResponseData>('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyAumSod3BXEKaYDpI8ONmoM4K7pzr7GZ18',
+    return this.http.post<AuthResponseData>('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=' + + environment.firebaseAPIKey,
       {
         email: email,
         password: password,
@@ -117,7 +118,7 @@ export class AuthService {
   /* We want to return the observable from sending an http request from this method. So by returning that observable, we kinda
   prepare that observable in this method but with calling this method, we can subscribe to the result which this method returns. */
   login(email: string, password: string) {
-    return this.http.post<AuthResponseData>('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=AIzaSyAumSod3BXEKaYDpI8ONmoM4K7pzr7GZ18',
+    return this.http.post<AuthResponseData>('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=' + environment.firebaseAPIKey,
       {
         email: email,
         password: password,
