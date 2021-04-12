@@ -2908,4 +2908,5 @@ If the templateRef of @ViewChild() is equal to the local property of your compon
 
 Error description:
 TypeError: Cannot read property 'ngOriginalError' of undefined
-This error was caused because of unhandled errors in subscribe(), in ssr mode.-->
+This error was caused because of unhandled errors in subscribe(), so basically there isn't any handler for thrown error and it  doens't matter if you're in
+SSR mode or CSR(client side rendering).-->
