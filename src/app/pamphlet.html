@@ -2904,4 +2904,8 @@ EX)
   </div>
 </div>
 
-If the templateRef of @ViewChild() is equal to the local property of your component, it might be overwrite it! Be careful about naming of templateRefs.-->
+If the templateRef of @ViewChild() is equal to the local property of your component, it might be overwrite it! Be careful about naming of templateRefs.
+
+Error description:
+TypeError: Cannot read property 'ngOriginalError' of undefined
+This error was caused because of unhandled errors in subscribe(), in ssr mode.-->
