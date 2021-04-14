@@ -2910,5 +2910,5 @@ Error description:
 TypeError: Cannot read property 'ngOriginalError' of undefined
 This error was caused because of unhandled errors in subscribe(), so basically there isn't any handler for thrown error and it  doens't matter if you're in
 SSR mode or CSR(client side rendering).-->
-<!-- When using angular's httpClient library, the body object of response belongs to angular itself not our API!!! The actual response of our API is in the content
-property of angular's http client.-->
+<!-- When using angular's httpClient library WITH OPTION of: observe: 'response' for GET reqs, the body object of response belongs to angular itself not our API!!!
+The actual response of our API is in the content property of angular's http client.-->
