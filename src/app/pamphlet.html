@@ -2921,4 +2921,8 @@ ONLY get out of the switch block and not the whole method, you need to use break
 you need to use break.
 
 When you have a reactiveForm and also a form control which is INSIDE a <ng-template> you have to place the <ng-template> INSIDE the <form> tag, otherwise it won't 
-find out that it's a control of that group and will throw error.-->
+find out that it's a control of that group and will throw error.
+
+When you wanna submit a reactive form for getting the whole form module, you have 2 options: 
+1) Directly console.log() the formGroup property which is in TS file.
+2) Pass the [formGroup] from html file to the called method for (ngSubmit) and receive it in that method by providing a parameter and then logging that param.-->
