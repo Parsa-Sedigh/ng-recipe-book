@@ -2918,4 +2918,7 @@ When you add some css asset or other asset or even some settings to angular.json
 
 When you have a switch case, if you use return keyword inside your case statements, it will return from the WHOLE method and NOT JUST that switch case. If you want to 
 ONLY get out of the switch block and not the whole method, you need to use break keyword instead of return. So if you want to return sth from that method or function,
-you need to use break.-->
+you need to use break.
+
+When you have a reactiveForm and also a form control which is INSIDE a <ng-template> you have to place the <ng-template> INSIDE the <form> tag, otherwise it won't 
+find out that it's a control of that group and will throw error.-->
