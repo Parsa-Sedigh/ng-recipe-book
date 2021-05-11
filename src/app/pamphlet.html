@@ -2925,4 +2925,8 @@ find out that it's a control of that group and will throw error.
 
 When you wanna submit a reactive form for getting the whole form module, you have 2 options: 
 1) Directly console.log() the formGroup property which is in TS file.
-2) Pass the [formGroup] from html file to the called method for (ngSubmit) and receive it in that method by providing a parameter and then logging that param.-->
+2) Pass the [formGroup] from html file to the called method for (ngSubmit) and receive it in that method by providing a parameter and then logging that param.
+
+When using angular material and you have sth like bottom-sheet, you can't access route or route.params or sth like that, INSIDE the component that is used for 
+content of that bottom-sheet. The soluton is to PASS down those route.params from the creator of that bottom-sheet to the component which is used for content 
+of bottom-sheet.-->
