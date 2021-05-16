@@ -2932,4 +2932,7 @@ content of that bottom-sheet. The soluton is to PASS down those route.params fro
 of bottom-sheet.-->
 <!-- When you wanna test the service worker, it's good to use watch script of angular BUT with one crucial difference which is make that script to work in production
 mode not in develoment mode. So change the default watch script to: ng build --watch --configuration production
-Also for source map: ng build --configuration production --source-map-->
+Also for source map: ng build --configuration production --source-map
+
+When you want to execute some code in ngOnChanges() ONLY ONCE, you need to use the firstChange property of simpleChanges inside ngOnChanges and use it inside 
+an if statment.-->
