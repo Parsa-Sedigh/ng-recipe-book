@@ -2930,3 +2930,6 @@ When you wanna submit a reactive form for getting the whole form module, you hav
 When using angular material and you have sth like bottom-sheet, you can't access route or route.params or sth like that, INSIDE the component that is used for 
 content of that bottom-sheet. The soluton is to PASS down those route.params from the creator of that bottom-sheet to the component which is used for content 
 of bottom-sheet.-->
+<!-- When you wanna test the service worker, it's good to use watch script of angular BUT with one crucial difference which is make that script to work in production
+mode not in develoment mode. So change the default watch script to: ng build --watch --configuration production
+Also for source map: ng build --configuration production --source-map-->
