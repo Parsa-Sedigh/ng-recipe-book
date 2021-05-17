@@ -2935,4 +2935,9 @@ mode not in develoment mode. So change the default watch script to: ng build --w
 Also for source map: ng build --configuration production --source-map
 
 When you want to execute some code in ngOnChanges() ONLY ONCE, you need to use the firstChange property of simpleChanges inside ngOnChanges and use it inside 
-an if statment.-->
+an if statment.
+
+Errors in reactive forms:
+In angular reactive forms(doesn't matter you're using normal api or formBuilder api), the OVERALL errors array is meant for the WHOLE form. If you've just set Validators
+for INDIVIDUAL controls and you think the errors are not showing in that OVERALL errors array, you're wrong. As I said, that OVERALL errros array is for the validators
+of OVERALL form not individual controls. So for errors of individual controls you must see the controls property of that form.-->
