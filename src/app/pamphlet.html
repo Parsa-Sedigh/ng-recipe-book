@@ -2940,4 +2940,21 @@ an if statment.
 Errors in reactive forms:
 In angular reactive forms(doesn't matter you're using normal api or formBuilder api), the OVERALL errors array is meant for the WHOLE form. If you've just set Validators
 for INDIVIDUAL controls and you think the errors are not showing in that OVERALL errors array, you're wrong. As I said, that OVERALL errros array is for the validators
-of OVERALL form not individual controls. So for errors of individual controls you must see the controls property of that form.-->
+of OVERALL form not individual controls. So for errors of individual controls you must see the controls property of that form.
+
+material mat-form-field errors:
+In angular material when you want to write the html for the errors of form, typicall you do sth like:
+EX)
+<mat-form-field>
+  <input matInput>
+<mat-error *ngIf="<form field name>.errors.required && ...">...</mat-error>
+<mat-error>...</mat-error>
+</mat-form-field>
+
+Now that would cause some errors in the console of browser when you have not errors. Because we're accessing errors property that doesn't have required property on it.
+So we have 2 options: 
+1) Using ? after errors: <form field name>.errors?.required to silence the error.
+2) Wrap <mat-error>s inside a <ng-containe *ngIf=""> or sth else...
+
+The second option would cause <mat-error> to go inside the input, so it's good to use the first option-->
+
