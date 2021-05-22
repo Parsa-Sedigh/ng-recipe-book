@@ -2962,5 +2962,12 @@ When you have some @ViewChild() properties and in html of them, they have some *
 if in some method, the condition of those *ngIfs turnes to true, the elements inside that *ngIf must be shown immediately right? 
 Well maybe, but they're @ViewChild() properties in the class of that component, won't. Therefore, you need to use rxjs timer(0).subscribe() and pass a callback
 function to subscribe() and it's inside that place which those @ViewChild() properties are defined and ready to use and without using timer(0) , they would be 
-undefined. -->
+undefined.
+ EX)
+    We need for change detection to finish it's work and after that, do our DOM manipulation. Here, we're actually `locking` the steps.
+    timer(0).subscribe(() => {
+      this.step1.completed = false;
+      this.step2.completed = false;
+      this.step3.completed = false;
+    });-->
 
