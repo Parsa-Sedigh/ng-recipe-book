@@ -2956,5 +2956,11 @@ So we have 2 options:
 1) Using ? after errors: <form field name>.errors?.required to silence the error.
 2) Wrap <mat-error>s inside a <ng-containe *ngIf=""> or sth else...
 
-The second option would cause <mat-error> to go inside the input, so it's good to use the first option-->
+The second option would cause <mat-error> to go inside the input, so it's good to use the first option.
+
+When you have some @ViewChild() properties and in html of them, they have some *ngIf on 'em and in the beginning, those *ngIfs are false, in this case,
+if in some method, the condition of those *ngIfs turnes to true, the elements inside that *ngIf must be shown immediately right? 
+Well maybe, but they're @ViewChild() properties in the class of that component, won't. Therefore, you need to use rxjs timer(0).subscribe() and pass a callback
+function to subscribe() and it's inside that place which those @ViewChild() properties are defined and ready to use and without using timer(0) , they would be 
+undefined. -->
 
