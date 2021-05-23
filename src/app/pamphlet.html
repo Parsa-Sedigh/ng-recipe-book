@@ -1569,7 +1569,13 @@ Important: But we can drop the FormsModule and get rid of auth.component, becaus
 
 Important: When you outsource sth and create a separate module for it, if it has a related service and if that service was provided importing it in
  providers array and not by recommended approach, then you would keep that in providers array of app.module in order to have it application-wide.-->
-<!-- 12. Understanding lazy loading:
+<!-- 12. Understanding 
+ 
+
+
+
+
+loading:
 Let's dive into first optimization concept. Because thus far, that entire code splitting by separating our modules into separate modules,
 was only cosmetical, it makes our code in the individual modules leaner and it can help us with maintaining that code but it doesn't
 influence the performance of our app, at all. But that would change by using lazy loading, so using multiple feature modules, is a
@@ -2890,7 +2896,7 @@ So it doesn't requires formData but directly wants the binary.
 
 Now let's say we want to track the progress of upload. For that, you can pass an object as THIRD argument of post() method. TODO till 8:00-->
 
-<!-- When you're using lazy loading and have <x>-routing.module and <x>-module , you HAVE TO ALSO import <x>-routing.module.ts in imports array of <x>-module.ts and also
+<!-- When you're using lazy loading and have <x>-routing.module and <x>-module , you HAVE TO ALSO import <x>-routing.module.ts in imports array of <x>.module.ts and also
 include the components which you defined in <x>-routing.module.ts inside <x>.module.ts's declarations array.
 
 When wanna show form errors to user, it's good to give him a chance to actually CHANGE the value of that input or control and then if it causes some errors, show those errors,
