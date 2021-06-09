@@ -2975,5 +2975,16 @@ undefined.
       this.step1.completed = false;
       this.step2.completed = false;
       this.step3.completed = false;
-    });-->
+    });
+
+A note about bindings with [] or without []:
+When you want to pass in a boolean, you HAVE TO use [] binding and you shouldn't use a binding without []. Because if you use the second case, the type of boolean that 
+you receive in child component would be string and not boolean. 
+EX)
+<app-child [someBoolean]="true"></app-child>
+<app-child someBoolean="true"></app-child>
+
+In first case, if you log the received @Input() in child component, you will get: true (boolean!), but in second case, you will get: "true" (a string!!!)-->
+
+
 
