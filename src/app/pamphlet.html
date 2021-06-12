@@ -2984,7 +2984,11 @@ EX)
 <app-child [someBoolean]="true"></app-child>
 <app-child someBoolean="true"></app-child>
 
-In first case, if you log the received @Input() in child component, you will get: true (boolean!), but in second case, you will get: "true" (a string!!!)-->
+In first case, if you log the received @Input() in child component, you will get: true (boolean!), but in second case, you will get: "true" (a string!!!)
+
+Remember: The errors propert of overall reactive form, is the errors for WHOLE form and not the individul controls. So for a BASIC reactive form, the whlole errors property,
+after submitting that form, would possibly be null , but the form itself would be in invalid state. Because by default, there isn't any validator function for WHOLE 
+form to add some errors to that whole errors property. -->
 
 
 
