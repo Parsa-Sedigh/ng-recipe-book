@@ -2988,7 +2988,8 @@ In first case, if you log the received @Input() in child component, you will get
 
 Remember: The errors propert of overall reactive form, is the errors for WHOLE form and not the individul controls. So for a BASIC reactive form, the whlole errors property,
 after submitting that form, would possibly be null , but the form itself would be in invalid state. Because by default, there isn't any validator function for WHOLE 
-form to add some errors to that whole errors property. -->
-
+form to add some errors to that whole errors property.-->
+<!-- When you have multiple checkboxes and by clicking on other checkboxes than the first one, you see that, ONLY the first checkbox is affecting and not that ACTUAL checkbox,
+it probably has to do with id attr of those elements that are identical. Try to give unique id attributes to all of those checkboxes and shall this problem would be solved.-->
 
 
