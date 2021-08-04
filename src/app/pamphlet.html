@@ -2992,4 +2992,9 @@ form to add some errors to that whole errors property.-->
 <!-- When you have multiple checkboxes and by clicking on other checkboxes than the first one, you see that, ONLY the first checkbox is affecting and not that ACTUAL checkbox,
 it probably has to do with id attr of those elements that are identical. Try to give unique id attributes to all of those checkboxes and shall this problem would be solved.-->
 
+<!-- In JS, doing array push() method on a property of an object which that property on object doesn't exists would be done like:
+  shop.priceOptionColumnNames = [...this.priceOptionDefaultColumnNames];
+and not like:
+ shop.priceOptionColumnNames = this.priceOptionDefaultColumnNames;-->
+
 
