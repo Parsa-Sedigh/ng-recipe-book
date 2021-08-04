@@ -3001,4 +3001,9 @@ for disabling service worker, after running build:ssr, do:
   1) delete ngsw-worker.js
   2) rename safety-worker.js to ngsw-worker.js-->
 
+<!-- universal and parsing JSON:
+ When you have universal and you wanna parse a JSON you shouldn't do this in server side, instead for both parsing and rendering in template, of that JSON, you must add a 
+isBrowser condition to only do both of those tasks in browser. Because doing them in both server side and browser side would throw error.
+ -->
+
 
