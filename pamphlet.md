@@ -2767,7 +2767,7 @@ As of Angular 8+, there's a new way of clearing all items in a FormArray.
 The clear() method automatically loops through all registered FormControls (or FormGroups) in the FormArray and removes them.
 It's like manually creating a loop and calling removeAt() for every item.
 -->
-<!-- The next comments are in pamphlet.html file. -->
+<!-- The next comments are in pamphlet.md file. -->
 
 <!-- Right now we are using some *ngIf directives to navigate around the app. So first we catch the clicked element which happened
  on <app-header> and then we store that $event variable which has the clicked element to a prop in app.component.ts file and then
